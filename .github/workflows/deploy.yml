@@ -1,16 +1,14 @@
 name: Deploy to Cloudflare Pages
 
-# Production deploy (the live site, scan.packetflow.be):
-#   - push to main          -> production deploy (i.e. after a PR is merged)
+# Cloudflare Pages deploys, both production and per-PR previews:
+#   - push to main          -> PRODUCTION deploy (scan.packetflow.be)
+#   - pull_request (ready)  -> PREVIEW deploy (unique *.pages.dev URL, with the
+#                              /api Functions running, so a real scan works)
 #   - workflow_dispatch     -> manual run
-# Nothing here runs on pull requests: a PR must never reach Cloudflare before
-# it's merged. Pre-merge review happens on GitHub Pages staging instead — a
-# ready-for-review PR is published there (see github-pages.yml). Merge to main
-# is what promotes a change to production.
 #
-# NOTE: the /api/* checks run as Cloudflare Pages Functions, so they only work
-# on this Cloudflare deploy — not on the static GitHub Pages staging preview
-# (staging is for reviewing the UI; see README §Deploy).
+# Preview deploys are isolated from production (separate URL); merging to main is
+# what promotes a change to production. Unlike a static host, these previews run
+# the Cloudflare Pages Functions, so reviewers can test an actual domain scan.
 #
 # ONE-TIME SETUP (owner only — CI cannot do this), see README §Deploy:
 #   1. Cloudflare dashboard -> Workers & Pages -> Create -> Pages -> Direct
@@ -26,20 +24,26 @@ name: Deploy to Cloudflare Pages
 on:
   push:
     branches: [main]
+  pull_request:
+    types: [opened, reopened, ready_for_review, synchronize]
   workflow_dispatch:
 
 permissions:
   contents: read
   deployments: write
 
+# One deploy at a time per branch; don't cancel an in-progress run.
 concurrency:
-  group: cf-pages
+  group: cf-pages-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     name: Build & deploy
+    # Skip draft PRs — only preview once a PR is ready for review. (push /
+    # workflow_dispatch have no pull_request payload, so `.draft` is empty.)
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     # Exposed at job level so the deploy step's `if:` can test for it (secrets
     # can't be referenced directly in an `if` expression).
     env:
@@ -56,15 +60,16 @@ jobs:
 
       - name: Build
         env:
-          # Canonical + sitemap always point at production. Cloudflare Pages
-          # serves at the domain root, so the base path is always "/".
+          # Canonical + sitemap always point at production (previews are
+          # throwaway and shouldn't be indexed). Cloudflare Pages serves at the
+          # root, so the base path is always "/".
           SITE_URL: https://scan.packetflow.be
           BASE_PATH: /
         run: npm run build
 
       - name: Deploy to Cloudflare Pages
         # Skips (CI stays green) until the owner adds the Cloudflare secrets
-        # — see §1b. Once CLOUDFLARE_API_TOKEN exists, deploys run normally.
+        # — see README §Deploy. Once CLOUDFLARE_API_TOKEN exists, deploys run.
         #
         # Deploys with the wrangler pinned in devDependencies (see package.json)
         # rather than cloudflare/wrangler-action, which pulled an old, vulnerable
@@ -75,6 +80,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        # Only runs for push to main / manual dispatch, so this is always the
-        # production branch -> production deployment.
-        run: npx wrangler pages deploy dist --project-name=packetflow-scan --branch=${{ github.ref_name }} --commit-dirty=true
+        # --branch drives prod vs preview: on push to main, github.ref_name is
+        # `main` (the production branch) -> production; on a PR, github.head_ref
+        # is the feature branch -> preview deployment.
+        run: npx wrangler pages deploy dist --project-name=packetflow-scan --branch=${{ github.head_ref || github.ref_name }} --commit-dirty=true
