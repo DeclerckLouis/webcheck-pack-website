@@ -3,10 +3,9 @@ import { defineConfig } from "astro/config";
 import cloudflare from "@astrojs/cloudflare";
 import tailwindcss from "@tailwindcss/vite";
 
-// SITE_URL / BASE_PATH are injected by CI (see .github/workflows/*.yml):
-//   - Cloudflare production serves at the domain root → BASE_PATH "/".
-//   - GitHub Pages staging serves under a sub-path → BASE_PATH "/<repo>/".
-// Locally they're unset, so we fall back to sensible dev defaults.
+// SITE_URL / BASE_PATH are injected by CI (see .github/workflows/deploy.yml).
+// Cloudflare Pages (production and previews) serves at the domain root, so
+// BASE_PATH is always "/"; locally these are unset and fall back to defaults.
 const SITE_URL = process.env.SITE_URL || "https://scan.packetflow.be";
 const BASE_PATH = process.env.BASE_PATH || "/";
 
