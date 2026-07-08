@@ -1,0 +1,105 @@
+---
+import { partners, partnersIntro } from "@/data/partners";
+import Kicker from "./Kicker.astro";
+import { url } from "@/lib/url";
+---
+
+<section class="section partners">
+  <div class="container">
+    <div class="partners__head">
+      <Kicker>Partners &amp; certificeringen</Kicker>
+      <h2 class="partners__title">Erkende netwerkpartners</h2>
+      <p class="partners__intro">{partnersIntro}</p>
+    </div>
+    <ul class="partners__grid">
+      {
+        partners.map((p) => {
+          const inner = (
+            <>
+              <img
+                src={url(p.logo)}
+                alt={p.alt}
+                loading="lazy"
+                class="partners__logo"
+                onerror="this.style.display='none'; this.nextElementSibling.classList.remove('sr-only')"
+              />
+              <span class="partners__name sr-only">{p.name}</span>
+            </>
+          );
+          return (
+            <li class="partners__item">
+              {p.url ? (
+                <a href={p.url} target="_blank" rel="noopener" class="partners__link">
+                  {inner}
+                </a>
+              ) : (
+                inner
+              )}
+            </li>
+          );
+        })
+      }
+    </ul>
+  </div>
+</section>
+
+<style>
+  .partners {
+    background: var(--paper);
+    border-block: 1px solid var(--border-soft);
+  }
+  .partners__head {
+    max-width: 56ch;
+    margin-bottom: var(--space-6);
+  }
+  .partners__title {
+    font-size: var(--text-2xl);
+    margin: var(--space-3) 0 0;
+  }
+  .partners__intro {
+    margin-top: var(--space-3);
+    font-size: var(--text-md);
+    line-height: var(--leading-relaxed);
+    color: var(--text-body);
+  }
+  .partners__grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-5);
+    align-items: stretch;
+  }
+  .partners__item {
+    flex: 0 1 220px;
+  }
+  .partners__link,
+  .partners__item > :global(*) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-4);
+    height: 100%;
+    padding: var(--space-5);
+    background: var(--surface-raised);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-xs);
+    transition: box-shadow var(--dur-base) var(--ease-out);
+  }
+  .partners__link:hover {
+    box-shadow: var(--shadow-sm);
+  }
+  .partners__logo {
+    height: 96px;
+    width: auto;
+    flex: none;
+  }
+  .partners__name {
+    font-family: var(--font-sans);
+    font-weight: var(--fw-semibold);
+    font-size: var(--text-sm);
+    color: var(--text-strong);
+  }
+</style>

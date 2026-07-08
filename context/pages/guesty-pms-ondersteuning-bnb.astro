@@ -1,0 +1,347 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import CtaSection from "@/components/CtaSection.astro";
+import Card from "@/components/Card.astro";
+import Kicker from "@/components/Kicker.astro";
+import Icon from "@/components/Icon.astro";
+import Button from "@/components/Button.astro";
+import Breadcrumbs from "@/components/Breadcrumbs.astro";
+import Faq from "@/components/Faq.astro";
+import { site } from "@/data/site";
+import { service, breadcrumbs, faqPage } from "@/lib/schema";
+import { url } from "@/lib/url";
+
+const crumbs: [string, string][] = [
+  ["Home", "/"],
+  ["Guesty & PMS-ondersteuning", "/guesty-pms-ondersteuning-bnb"],
+];
+
+// Herkenbare pijnpunten rond boekingssystemen — in de woorden van de uitbater.
+const pains = [
+  {
+    icon: "copy",
+    title: "Dubbele boekingen",
+    body: "Twee gasten voor dezelfde kamer op dezelfde nacht. Meestal omdat de kalenders van Booking.com, Airbnb en uw eigen site niet echt synchroon lopen.",
+  },
+  {
+    icon: "refresh-cw",
+    title: "Kalenders die niet synchroniseren",
+    body: "Een nacht die op het ene kanaal vrij staat en op het andere geboekt is. U corrigeert het handmatig — tot het weer misloopt.",
+  },
+  {
+    icon: "tag",
+    title: "Prijzen die niet doorkomen",
+    body: "Een tarief of promotie die u aanpast in uw PMS, maar die niet of te laat verschijnt op de OTA's waar uw gasten boeken.",
+  },
+  {
+    icon: "mail",
+    title: "Gastcommunicatie die hapert",
+    body: "Automatische bevestigingen, check-in-instructies of reviews-uitnodigingen die niet vertrekken, dubbel vertrekken of naar de verkeerde gast gaan.",
+  },
+  {
+    icon: "key-round",
+    title: "Koppeling met slimme sloten",
+    body: "Toegangscodes die niet automatisch volgen op een boeking, of een gastennetwerk en check-in die los van elkaar staan.",
+  },
+  {
+    icon: "settings",
+    title: "Opzet die u niet zelf onderhoudt",
+    body: "Guesty of uw channel manager staat er, maar niemand houdt de instellingen, koppelingen en kanalen echt bij als er iets verandert.",
+  },
+];
+
+const faqs = [
+  {
+    question: "Werken jullie alleen met Guesty?",
+    answer:
+      "Nee. Guesty is een van de systemen waar we mee werken, maar niet het enige. We helpen ook met andere PMS'en en channel managers — denk aan Smoobu, Beds24 of Cloudbeds — en met de koppelingen naar OTA's zoals Booking.com en Airbnb. Welk systeem het best bij u past, hangt af van uw type verblijf, het aantal eenheden en hoe u vandaag werkt. Dat bekijken we samen, we duwen u niet in een bepaald platform.",
+  },
+  {
+    question: "Wat kost hulp met mijn boekingssysteem?",
+    answer:
+      "We werken op projectbasis, niet met een vast maandbedrag. Wat het kost, hangt af van wat er nodig is — een eenmalige opzet van Guesty en uw kanalen is iets anders dan het uitzoeken van hardnekkige synchronisatieproblemen. Na een kort gesprek waarin we uw situatie doornemen, krijgt u een heldere offerte. Zo weet u vooraf waar u aan toe bent.",
+  },
+  {
+    question: "Kunnen jullie ook mijn wifi en gastennetwerk aanpakken?",
+    answer:
+      "Ja, en dat is net onze sterkte. PacketFlow doet zowel het boekingssysteem als het netwerk erachter: gastenwifi met volledige dekking, een veilig gescheiden netwerk voor uw eigen systemen en slimme toegang. Zo heeft u één partner voor de techniek én het platform. Meer daarover leest u op onze pagina over het gastennetwerk voor B&B's in het Brugse Ommeland.",
+  },
+  {
+    question: "Noemen jullie de externe specialist bij naam?",
+    answer:
+      "Voor gespecialiseerde PMS-configuratie werken we samen met een externe specialist in booking- en PMS-integraties. Voor u verandert dat niets: u heeft altijd één aanspreekpunt, één offerte en één factuur — PacketFlow. Wij zijn hoofdaannemer en blijven verantwoordelijk voor het geheel.",
+  },
+  {
+    question: "In welke regio werken jullie?",
+    answer:
+      "We zijn actief in West-Vlaanderen, met de focus op het Brugse Ommeland en de Kust. Het netwerkwerk gebeurt ter plaatse. Het configureren van Guesty, channel managers en de koppelingen met OTA's kan grotendeels op afstand, dus daarvoor werken we ook vlot met verblijven wat verder in de regio.",
+  },
+  {
+    question: "Hoe helpt dit tegen dubbele boekingen?",
+    answer:
+      "Dubbele boekingen ontstaan bijna altijd doordat kalenders niet correct gekoppeld zijn tussen uw PMS, uw eigen boekingsmodule en de OTA's. We zetten die koppelingen goed op, controleren of beschikbaarheid en prijzen in beide richtingen doorstromen, en ruimen de instellingen op die de fouten veroorzaken. Het doel is een systeem dat u kunt vertrouwen zonder elke boeking na te kijken.",
+  },
+];
+
+const jsonLd = [
+  service({
+    name: "Guesty & PMS-ondersteuning voor B&B's",
+    description:
+      "Hulp bij het opzetten, koppelen en beheren van Guesty en andere PMS- en channel-manager-systemen voor B&B's en vakantieverhuurders in West-Vlaanderen.",
+    serviceType: "PMS- en channel-manager-ondersteuning",
+  }),
+  breadcrumbs(crumbs),
+  faqPage(faqs),
+];
+---
+
+<BaseLayout
+  title="Guesty & PMS-ondersteuning voor B&B's"
+  description="Hulp met Guesty, channel managers en uw boekingssysteem voor B&B's in West-Vlaanderen. Eén aanspreekpunt voor techniek én boekingsplatform."
+  jsonLd={jsonLd}
+>
+  <section class="page-hero">
+    <div class="container page-hero__in">
+      <div>
+        <Breadcrumbs items={crumbs} />
+        <Kicker>Voor B&amp;B's &amp; vakantieverhuur</Kicker>
+        <h1>Hulp met Guesty, channel managers en uw boekingssysteem</h1>
+        <p class="lead page-hero__lead">
+          PacketFlow helpt B&amp;B's en vakantieverhuurders in West-Vlaanderen
+          met het opzetten, koppelen en beheren van Guesty en andere PMS- en
+          channel-manager-systemen. U heeft één aanspreekpunt voor de techniek
+          én het boekingsplatform — geen doorverwijzingen tussen partijen.
+        </p>
+        <div class="page-hero__actions">
+          <Button href="/contact" variant="primary" iconRight="arrow-right">Leg uw situatie voor</Button>
+          <Button href={site.phoneHref} variant="secondary" iconLeft="phone">Bel {site.phone}</Button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* Problem section */}
+  <section class="section">
+    <div class="container">
+      <div class="section-head">
+        <Kicker>Herkenbaar?</Kicker>
+        <h2>Waar het meestal misloopt met boekingssystemen</h2>
+      </div>
+      <div class="grid-cards">
+        {
+          pains.map((p) => (
+            <Card class="feature">
+              <span class="feature__icon"><Icon name={p.icon} size={20} /></span>
+              <h3>{p.title}</h3>
+              <p>{p.body}</p>
+            </Card>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  {/* Approach */}
+  <section class="section approach">
+    <div class="container grid-2">
+      <div>
+        <Kicker>Onze aanpak</Kicker>
+        <h2 class="approach__title">Eén aanspreekpunt, ook voor het platform</h2>
+        <p class="approach__lead lead">
+          Voor gespecialiseerde PMS-configuratie werken we samen met een externe
+          specialist in booking- en PMS-integraties. U merkt daar niets van: u
+          heeft altijd één aanspreekpunt, één offerte en één factuur —
+          PacketFlow. Wij zijn hoofdaannemer en blijven verantwoordelijk voor
+          het geheel.
+        </p>
+      </div>
+      <ul class="checklist approach__list">
+        <li>
+          <span class="check"><Icon name="check" size={14} /></span>
+          <span>We brengen uw huidige opzet in kaart: welk PMS, welke kanalen, welke koppelingen.</span>
+        </li>
+        <li>
+          <span class="check"><Icon name="check" size={14} /></span>
+          <span>Guesty of uw channel manager wordt correct ingesteld en gekoppeld aan uw OTA's.</span>
+        </li>
+        <li>
+          <span class="check"><Icon name="check" size={14} /></span>
+          <span>We testen of beschikbaarheid en prijzen in beide richtingen kloppen.</span>
+        </li>
+        <li>
+          <span class="check"><Icon name="check" size={14} /></span>
+          <span>Automatische gastcommunicatie en slimme toegang worden waar zinvol mee opgezet.</span>
+        </li>
+        <li>
+          <span class="check"><Icon name="check" size={14} /></span>
+          <span>U krijgt uitleg in mensentaal, zodat u snapt wat er draait.</span>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  {/* Differentiator — PMS + netwerk uit één hand */}
+  <section class="section">
+    <div class="container">
+      <div class="section-head">
+        <Kicker>Het verschil</Kicker>
+        <h2>PMS én netwerk uit één hand</h2>
+      </div>
+      <div class="grid-2 combo">
+        <div class="prose">
+          <p class="combo__lead">
+            Een boekingssysteem staat nooit op zichzelf. Het draait op uw
+            netwerk, praat met slimme sloten en deelt de lijn met uw
+            gastenwifi. Wie enkel het platform instelt, laat net dát stuk
+            liggen waar de praktijk vastloopt.
+          </p>
+          <p>
+            PacketFlow doet ook het netwerk erachter: een gastennetwerk met
+            volledige dekking, een veilig gescheiden netwerk voor uw eigen
+            systemen en slimme toegang die kan meelopen met een boeking. Die
+            combinatie — boekingsplatform én netwerk — biedt lokaal vrijwel
+            niemand anders uit één hand.
+          </p>
+        </div>
+        <div class="combo__links">
+          <a href={url("/gastennetwerk-bnb-brugse-ommeland")} class="combo__link">
+            <Icon name="wifi" size={20} color="var(--orange-600)" />
+            <span>
+              <strong>Gastennetwerk voor B&amp;B's in het Brugse Ommeland</strong>
+              <em>Betrouwbare wifi in elke kamer, veilig gescheiden van uw eigen systemen.</em>
+            </span>
+            <Icon name="arrow-right" size={16} />
+          </a>
+          <a href={url("/sectoren/horeca-bnb")} class="combo__link">
+            <Icon name="utensils" size={20} color="var(--orange-600)" />
+            <span>
+              <strong>IT &amp; WiFi voor horeca en B&amp;B's</strong>
+              <em>Alles wat een verblijf technisch nodig heeft, van netwerk tot camera's.</em>
+            </span>
+            <Icon name="arrow-right" size={16} />
+          </a>
+          <a href={url("/blog/wifi-bnb-volledige-dekking")} class="combo__link">
+            <Icon name="book-open" size={20} color="var(--orange-600)" />
+            <span>
+              <strong>WiFi voor een B&amp;B: volledige dekking, tevreden gasten</strong>
+              <em>Waarom boosters tekortschieten en hoe u élke kamer van sterk signaal voorziet.</em>
+            </span>
+            <Icon name="arrow-right" size={16} />
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* Scope */}
+  <section class="section scope">
+    <div class="container scope__inner">
+      <Kicker>Hoe we werken</Kicker>
+      <p class="scope__text">
+        Dit is projectwerk en ondersteuning op aanvraag. We zetten uw
+        boekingssysteem op, lossen een concreet probleem op of nemen een
+        koppeling onder handen — met een duidelijke offerte vooraf. We beloven
+        geen permanente bewaking van uw boekingen: u weet gewoon wie u belt
+        wanneer er iets moet gebeuren, en dat is telkens PacketFlow.
+      </p>
+    </div>
+  </section>
+
+  <Faq items={faqs} title="Veelgestelde vragen over Guesty & PMS-hulp" />
+
+  <CtaSection
+    title="Loopt uw boekingssysteem niet zoals het hoort?"
+    body="Leg ons kort voor waar het knelt — dubbele boekingen, kalenders die niet kloppen, of een opzet die u wilt laten nakijken. U krijgt een offerte na een kort gesprek."
+  />
+</BaseLayout>
+
+<style>
+  .approach {
+    background: var(--paper);
+    border-block: 1px solid var(--border-soft);
+  }
+  .approach__title {
+    font-size: var(--text-2xl);
+    margin: var(--space-3) 0 var(--space-4);
+  }
+  .approach__lead {
+    max-width: 46ch;
+  }
+  .approach__list {
+    align-self: center;
+  }
+
+  .combo {
+    align-items: start;
+  }
+  .combo__lead {
+    font-family: var(--font-display);
+    font-size: var(--text-md);
+    line-height: 1.6;
+    color: var(--text-strong);
+    margin: 0 0 var(--space-4);
+  }
+  .combo .prose p {
+    color: var(--text-muted);
+    line-height: var(--leading-relaxed);
+  }
+  .combo__links {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+  .combo__link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-5);
+    background: var(--surface-sunken);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-md);
+    transition:
+      border-color var(--dur-base) var(--ease-out),
+      box-shadow var(--dur-base) var(--ease-out);
+  }
+  .combo__link:hover {
+    border-color: var(--orange-300);
+    box-shadow: var(--shadow-md);
+  }
+  .combo__link > :global(svg):first-child {
+    flex: none;
+  }
+  .combo__link > :global(svg):last-child {
+    flex: none;
+    color: var(--primary);
+    margin-left: auto;
+  }
+  .combo__link span {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .combo__link strong {
+    font-weight: var(--fw-semibold);
+    color: var(--text-strong);
+    font-size: var(--text-sm);
+  }
+  .combo__link em {
+    font-style: normal;
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    line-height: var(--leading-relaxed);
+  }
+
+  .scope {
+    background: var(--paper);
+    border-block: 1px solid var(--border-soft);
+  }
+  .scope__inner {
+    max-width: var(--container-md);
+  }
+  .scope__text {
+    margin-top: var(--space-4);
+    font-size: var(--text-md);
+    line-height: var(--leading-relaxed);
+    color: var(--text-body);
+  }
+</style>

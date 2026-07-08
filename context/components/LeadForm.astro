@@ -1,0 +1,273 @@
+---
+// Lead-capture form for article pages. Same Odoo website_form → crm.lead flow
+// as the contact page, but compact and with attribution: the `source` (article
+// slug) and `campaign` props ride along on every submission so leads coming
+// from a specific post can be told apart in the CRM. Odoo Online can't resolve
+// the UTM many2one fields from a plain POST, so attribution is embedded in the
+// lead's title and description (always readable) rather than risking a failed
+// write — see the script below.
+import Card from "@/components/Card.astro";
+import Icon from "@/components/Icon.astro";
+import Button from "@/components/Button.astro";
+import { site } from "@/data/site";
+
+interface Props {
+  /** Stable identifier for the article (its slug). */
+  source: string;
+  /** Campaign label for grouping leads in the CRM. */
+  campaign: string;
+  title?: string;
+  body?: string;
+}
+const {
+  source,
+  campaign,
+  title = "Benieuwd wat IT-beheer ú zou kosten?",
+  body = "Vertel kort over uw zaak en uw huidige setup. Ik bezorg u een heldere richtprijs — vrijblijvend, binnen één werkdag.",
+} = Astro.props;
+
+const odooEndpoint = `${site.odooBaseUrl}/website/form/crm.lead`;
+const formId = `lead-form-${source}`;
+---
+
+<section class="section lead">
+  <div class="container">
+    <Card raised class="lead__card">
+      <div class="lead__intro">
+        <h2 class="lead__title">{title}</h2>
+        <p class="lead__body">{body}</p>
+      </div>
+      <form id={formId} class="lead-form" novalidate>
+        <div class="lead-form__row">
+          <label>
+            <span class="lead-form__label">Naam</span>
+            <input type="text" name="contact_name" placeholder="Uw naam" required />
+          </label>
+          <label>
+            <span class="lead-form__label">E-mail</span>
+            <input type="email" name="email_from" placeholder="u@kantoor.be" required />
+          </label>
+        </div>
+        <div class="lead-form__row">
+          <label>
+            <span class="lead-form__label">Telefoon <span class="lead-form__opt">(optioneel)</span></span>
+            <input type="tel" name="phone" placeholder="0470 12 34 56" />
+          </label>
+          <label>
+            <span class="lead-form__label">Bedrijf <span class="lead-form__opt">(optioneel)</span></span>
+            <input type="text" name="partner_name" placeholder="Naam van uw zaak" />
+          </label>
+        </div>
+        <label>
+          <span class="lead-form__label">Hoeveel medewerkers / pc's, en waar knelt het?</span>
+          <textarea name="description" rows="3" placeholder="Bv. 6 medewerkers, Microsoft 365, geen back-up…" required></textarea>
+        </label>
+
+        {/* Honeypot — bots fill this, humans never see it. */}
+        <div class="lead-form__hp" aria-hidden="true">
+          <label>Laat dit veld leeg<input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+        </div>
+
+        <div class="lead-form__msg form-msg" hidden role="alert">
+          Er ging iets mis bij het versturen. Mail me gerust rechtstreeks op
+          <a href={`mailto:${site.email}`}>{site.email}</a>.
+        </div>
+
+        <Button type="submit" variant="primary" size="lg" iconRight="send">
+          Vraag een richtprijs
+        </Button>
+        <p class="lead-form__fine">Geen verkooppraat. Uw gegevens blijven bij mij — zie <a href="/privacy">privacy</a>.</p>
+      </form>
+
+      <div class="lead-form__success form-success" hidden>
+        <span class="form-success__icon"><Icon name="check" size={28} color="var(--success)" /></span>
+        <h3 class="form-success__title">Bedankt — tot binnenkort!</h3>
+        <p class="form-success__body">Ik neem binnen één werkdag contact met u op.</p>
+      </div>
+    </Card>
+  </div>
+</section>
+
+<script define:vars={{ endpoint: odooEndpoint, source, campaign, formId }}>
+  const form = document.getElementById(formId);
+  if (form) {
+    const errorEl = form.querySelector(".lead-form__msg");
+    const successEl = form.parentElement.querySelector(".lead-form__success");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+
+      // Honeypot: if filled, silently pretend success (it's a bot).
+      const honey = form.querySelector('input[name="website"]');
+      if (honey && honey.value) {
+        form.hidden = true;
+        if (successEl) successEl.hidden = false;
+        return;
+      }
+
+      const submitBtn = form.querySelector('button[type="submit"]');
+      if (errorEl) errorEl.hidden = true;
+      if (submitBtn) submitBtn.disabled = true;
+
+      const data = new FormData(form);
+      data.delete("website"); // drop honeypot
+
+      const naam = (data.get("contact_name") || "").toString().trim() || "onbekend";
+      // Odoo crm.lead requires a title (`name`); fold the campaign into it so
+      // the lead is recognisable at a glance in the CRM list view.
+      data.set("name", `Blog-aanvraag — ${naam} [${campaign}]`);
+      // Prepend a readable attribution line to the message body so the source
+      // survives even though Odoo Online ignores UTM fields on a plain POST.
+      const omschrijving = (data.get("description") || "").toString();
+      data.set(
+        "description",
+        `Bron: blog/${source} · campagne: ${campaign}\n\n${omschrijving}`,
+      );
+
+      try {
+        // Odoo Online (SaaS) can't add CORS headers, so this is a no-cors
+        // "simple request": the POST still creates the crm.lead, but the
+        // response is opaque. We optimistically show success; only a real
+        // network failure rejects and reveals the error/mailto fallback.
+        await fetch(endpoint, { method: "POST", mode: "no-cors", body: data });
+        form.hidden = true;
+        if (successEl) successEl.hidden = false;
+      } catch (err) {
+        console.error("Lead-formulier versturen mislukt:", err);
+        if (submitBtn) submitBtn.disabled = false;
+        if (errorEl) errorEl.hidden = false;
+      }
+    });
+  }
+</script>
+
+<style>
+  .lead {
+    background: var(--surface-sunken);
+    border-top: 1px solid var(--border-soft);
+  }
+  .lead__card {
+    max-width: var(--container-md);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+  }
+  .lead__title {
+    font-size: var(--text-xl);
+    margin: 0 0 var(--space-2);
+  }
+  .lead__body {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    margin: 0;
+    max-width: 56ch;
+  }
+  .lead-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+  .lead-form__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+  }
+  .lead-form label {
+    display: block;
+  }
+  .lead-form__label {
+    display: block;
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    color: var(--text-strong);
+    margin-bottom: 6px;
+  }
+  .lead-form__opt {
+    color: var(--text-faint);
+    font-weight: var(--fw-regular);
+  }
+  .lead-form input,
+  .lead-form textarea {
+    width: 100%;
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    color: var(--text-strong);
+    background: var(--white);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    padding: 11px 14px;
+    transition: border-color var(--dur-fast) var(--ease-out);
+  }
+  .lead-form input::placeholder,
+  .lead-form textarea::placeholder {
+    color: var(--grey-400);
+  }
+  .lead-form input:focus,
+  .lead-form textarea:focus {
+    outline: none;
+    border-color: var(--orange-500);
+    box-shadow: 0 0 0 3px var(--focus-ring);
+  }
+  .lead-form textarea {
+    resize: vertical;
+  }
+  .lead-form__hp {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  .lead-form__fine {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    margin: 0;
+  }
+  .lead-form__fine a {
+    color: var(--text-link);
+    text-decoration: underline;
+  }
+  .form-msg {
+    font-size: var(--text-sm);
+    color: var(--danger);
+    background: var(--danger-soft);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+  }
+  .form-msg a {
+    color: var(--danger);
+    text-decoration: underline;
+  }
+  .form-success {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+    padding: var(--space-6) var(--space-2);
+  }
+  .form-success__icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--success-soft);
+    display: grid;
+    place-content: center;
+  }
+  .form-success__title {
+    font-size: var(--text-lg);
+    margin: 0;
+  }
+  .form-success__body {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    margin: 0;
+  }
+  @media (max-width: 620px) {
+    .lead-form__row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

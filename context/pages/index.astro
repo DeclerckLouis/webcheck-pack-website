@@ -1,0 +1,544 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import CtaSection from "@/components/CtaSection.astro";
+import Partners from "@/components/Partners.astro";
+import Reviews from "@/components/Reviews.astro";
+import Button from "@/components/Button.astro";
+import Badge from "@/components/Badge.astro";
+import Card from "@/components/Card.astro";
+import Kicker from "@/components/Kicker.astro";
+import Icon from "@/components/Icon.astro";
+import Portrait from "@/components/Portrait.astro";
+import { site } from "@/data/site";
+import { services } from "@/data/services";
+import { url } from "@/lib/url";
+
+// The LocalBusiness/Organization node is emitted site-wide by BaseLayout, so
+// the homepage needs no page-specific JSON-LD of its own.
+
+const status = [
+  ["Microsoft 365", "shield-check", "success", "Veilig"],
+  ["Back-up dossiers", "database", "success", "2 min geleden"],
+  ["Peppol e-facturatie", "file-check", "success", "Actief"],
+  ["Werkstation — balie", "monitor", "warning", "Update gepland"],
+];
+
+// Warmer "why" blocks, restored from the previous site.
+const pillars = [
+  ["clock", "Ondersteuning buiten de 9-to-5", "Uw zaak beheren stopt niet om 17u. Ik ook niet. Beschikbaar 's avonds en in het weekend om uw systemen draaiende te houden."],
+  ["map-pin", "Lokaal in Jabbeke", "Snelle ondersteuning ter plaatse voor lokale bedrijven in West- en Oost-Vlaanderen."],
+  ["award", "Kwaliteit & flexibiliteit", "Professionele IT-standaarden, met de flexibiliteit om te ondersteunen wanneer het er echt toe doet."],
+];
+
+// Flatten the hubs into a single services grid for the homepage teaser.
+const serviceItems = [
+  ["mail", "Microsoft 365", "E-mail, Teams, SharePoint en licenties — opgezet en onderhouden zonder kopzorgen."],
+  ["database", "Veilige back-up", "Uw dossiers automatisch en versleuteld bewaard. Getest, niet gehoopt."],
+  ["file-check", "Peppol e-facturatie", "Klaar voor de verplichte e-facturatie. Correct gekoppeld aan uw boekhouding."],
+  ["shield", "Cybersecurity", "Bescherming tegen phishing en ransomware, MFA en updates — met AI-detectie van verdacht gedrag."],
+  ["sparkles", "Microsoft 365 Copilot & AI", "AI die u tijd bespaart bij documenten en e-mail — veilig ingericht, gegevens privé."],
+  ["radar", "Monitoring & onderhoud", "Bewaking op de achtergrond, onderhoud 's avonds — zonder uw werk te onderbreken."],
+];
+
+const posture = [
+  ["shield-check", "Phishing & ransomware", "success", "Beschermd"],
+  ["lock", "Tweestapsverificatie (MFA)", "success", "Actief"],
+  ["scan-eye", "AI-detectie verdacht gedrag", "blue", "24/7"],
+  ["sparkles", "Microsoft 365 Copilot", "blue", "Veilig ingericht"],
+];
+---
+
+<BaseLayout
+  title={site.name}
+  description="Lokale IT-partner in West-Vlaanderen voor praktijken en kantoren. Microsoft 365, backup, Peppol en cybersecurity — één aanspreekpunt, scherp geprijsd."
+>
+  {/* ---- Hero ---- */}
+  <section class="hero">
+    <div class="container hero__grid">
+      <div>
+        <Badge tone="orange" dot>Beschikbaar 's avonds &amp; in het weekend</Badge>
+        <h1 class="hero__title">
+          <span class="hero__hallo">Hallo,</span><br />
+          uw lokale IT-partner<br />in West-Vlaanderen
+        </h1>
+        <span class="rule hero__rule"></span>
+        <p class="lead hero__lead">
+          Geen groot IT-bedrijf, geen wachtrij, geen wisselende technici bij uw
+          dossiers. Eén aanspreekpunt dat uw zaak kent — scherp geprijsd.
+        </p>
+        <div class="hero__actions">
+          <Button href="/contact" variant="primary" size="lg" iconRight="arrow-right">
+            Vrijblijvend kennismaken
+          </Button>
+          <Button href={site.phoneHref} variant="secondary" size="lg" iconLeft="phone">
+            Bel mij direct
+          </Button>
+        </div>
+      </div>
+
+      <div>
+        <Card raised padded={false}>
+          <div class="statuscard__head">
+            <span class="statuscard__title">Systeemstatus — voorbeeldkantoor</span>
+            <Badge tone="success" dot>Operationeel</Badge>
+          </div>
+          <div class="statuscard__body">
+            {
+              status.map(([name, icon, tone, val]) => (
+                <div class="statusrow">
+                  <span class="statusrow__icon">
+                    <Icon name={icon} size={17} color="var(--blue-700)" />
+                  </span>
+                  <span class="statusrow__name">{name}</span>
+                  <Badge tone={tone as any}>{val}</Badge>
+                </div>
+              ))
+            }
+            <p class="statuscard__note">
+              <Icon name="eye" size={14} /> Illustratief voorbeeld — proactief gemonitord, ik zie het vaak vóór u het merkt.
+            </p>
+          </div>
+        </Card>
+      </div>
+    </div>
+  </section>
+
+  {/* ---- Pillars ---- */}
+  <section class="section pillars">
+    <div class="container">
+      <Kicker>Waarom Packetflow</Kicker>
+      <h2 class="section__title">Lokale IT zonder het gedoe van een groot bedrijf</h2>
+      <div class="grid-3">
+        {
+          pillars.map(([icon, title, body], i) => (
+            <Card accent={i === 1} class="pillar">
+              <span class="pillar__icon">
+                <Icon name={icon} size={22} color="#fff" />
+              </span>
+              <h3 class="pillar__title">{title}</h3>
+              <p class="pillar__body">{body}</p>
+            </Card>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  {/* ---- Services ---- */}
+  <section class="section services" id="diensten">
+    <div class="container">
+      <div class="services__head">
+        <div>
+          <Kicker>Diensten</Kicker>
+          <h2 class="section__title section__title--flush">
+            Alles wat een klein kantoor nodig heeft
+          </h2>
+        </div>
+        <Badge tone="blue">Voor praktijken, kantoren, horeca &amp; verenigingen</Badge>
+      </div>
+      <div class="svc-grid">
+        {
+          serviceItems.map(([icon, title, body]) => (
+            <div class="svc">
+              <Icon name={icon} size={24} color="var(--orange-600)" />
+              <h3 class="svc__title">{title}</h3>
+              <p class="svc__body">{body}</p>
+            </div>
+          ))
+        }
+      </div>
+      <div class="services__cta">
+        <Button href="/diensten" variant="secondary" iconRight="arrow-right">
+          Bekijk alle diensten
+        </Button>
+      </div>
+    </div>
+  </section>
+
+  {/* ---- AI & security ---- */}
+  <section class="section ai" id="ai-beveiliging">
+    <div class="container hero__grid">
+      <div>
+        <Kicker>AI &amp; beveiliging</Kicker>
+        <h2 class="ai__title">
+          Veilig profiteren van AI — zonder uw dossiers uit handen te geven
+        </h2>
+        <span class="rule ai__rule"></span>
+        <p class="lead ai__lead">
+          AI bespaart u tijd: e-mails opstellen, documenten samenvatten,
+          terugkerend werk automatiseren. Maar voor een praktijk of kantoor
+          telt vooral één ding — uw cliënt- en patiëntgegevens blijven privé.
+          Ik richt AI zo in dat ze nuttig is én onder controle.
+        </p>
+        <ul class="ai__points">
+          {
+            [
+              "Microsoft 365 Copilot correct ingericht en rustig uitgelegd.",
+              "Praktische AI voor documenten, e-mail en samenvattingen.",
+              "Heldere afspraken: welke gegevens AI wél en niet ziet.",
+            ].map((p) => (
+              <li>
+                <span class="ai__check"><Icon name="check" size={14} color="var(--orange-600)" /></span>
+                {p}
+              </li>
+            ))
+          }
+        </ul>
+        <div class="ai__actions">
+          <Button href="/contact" variant="primary" size="lg" iconRight="shield-check">
+            Vraag een gratis AI- &amp; veiligheidscheck
+          </Button>
+        </div>
+      </div>
+
+      <Card raised padded={false}>
+        <div class="statuscard__head">
+          <span class="statuscard__title">Uw beveiliging in één oogopslag</span>
+          <Badge tone="success" dot>Op orde</Badge>
+        </div>
+        <div class="statuscard__body">
+          {
+            posture.map(([icon, name, tone, val]) => (
+              <div class="statusrow">
+                <span class="statusrow__icon">
+                  <Icon name={icon} size={17} color="var(--blue-700)" />
+                </span>
+                <span class="statusrow__name">{name}</span>
+                <Badge tone={tone as any}>{val}</Badge>
+              </div>
+            ))
+          }
+          <p class="statuscard__note">
+            <Icon name="eye" size={14} /> Illustratief voorbeeld — AI helpt mee bewaken, verdacht gedrag valt sneller op.
+          </p>
+        </div>
+      </Card>
+    </div>
+  </section>
+
+  {/* ---- About Louis ---- */}
+  <section class="about" id="over-mij">
+    <div class="container about__inner">
+      <Kicker color="var(--orange-300)">Over mij</Kicker>
+      <blockquote class="about__quote">
+        “Ik ben Louis Declerck uit Jabbeke. In bijberoep help ik kleine kantoren
+        met hun IT — zodat techniek nooit in de weg staat van uw échte werk.”
+      </blockquote>
+      <div class="about__person">
+        <Portrait src="/images/louis.jpg" alt="Louis Declerck" class="about__avatar" />
+        <div>
+          <div class="about__name">Louis Declerck</div>
+          <div class="about__meta">Packetflow · Jabbeke, West-Vlaanderen</div>
+        </div>
+        <a href={url("/over-mij")} class="about__link">Lees meer <Icon name="arrow-right" size={15} /></a>
+      </div>
+    </div>
+  </section>
+
+  <Partners />
+
+  <Reviews />
+
+  <CtaSection />
+</BaseLayout>
+
+<style>
+  /* Hero */
+  .hero {
+    background: var(--cream);
+    overflow: hidden;
+  }
+  .hero__grid {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 56px;
+    align-items: center;
+    padding-block: var(--space-9);
+  }
+  .hero__title {
+    font-size: clamp(2.125rem, 4.4vw, 3.25rem);
+    line-height: 1.12;
+    margin: 20px 0 0;
+    /* italic ascenders/descenders need a hair of room so nothing clips */
+    padding-block: 0.06em;
+  }
+  .hero__hallo {
+    font-style: italic;
+    font-weight: var(--fw-medium);
+  }
+  .hero__rule {
+    margin: 28px 0 22px;
+  }
+  .hero__lead {
+    max-width: 46ch;
+  }
+  .hero__actions {
+    display: flex;
+    gap: var(--space-3);
+    margin-top: 28px;
+    flex-wrap: wrap;
+  }
+
+  /* Status card (shared shape: hero + ai) */
+  .statuscard__head {
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--border-soft);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .statuscard__title {
+    font-family: var(--font-sans);
+    font-weight: var(--fw-semibold);
+    font-size: var(--text-sm);
+    color: var(--text-strong);
+  }
+  .statuscard__body {
+    padding: 8px 20px 18px;
+  }
+  .statusrow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--border-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .statusrow__icon {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    background: var(--blue-50);
+    display: grid;
+    place-content: center;
+    flex: none;
+  }
+  .statusrow__name {
+    flex: 1;
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    color: var(--text-strong);
+  }
+  .statuscard__note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-top: 14px;
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+  }
+
+  /* Section helpers */
+  .section__title {
+    font-size: var(--text-2xl);
+    margin: 12px 0 40px;
+  }
+  .section__title--flush {
+    margin-bottom: 0;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  .pillars {
+    background: var(--paper);
+  }
+  .pillar {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .pillar__icon {
+    width: 46px;
+    height: 46px;
+    border-radius: var(--radius-md);
+    background: var(--ink);
+    display: grid;
+    place-content: center;
+  }
+  .pillar__title {
+    font-size: var(--text-lg);
+    margin: 0;
+  }
+  .pillar__body {
+    font-size: var(--text-sm);
+    line-height: 1.65;
+    color: var(--text-muted);
+  }
+
+  /* Services */
+  .services {
+    background: var(--cream);
+  }
+  .services__head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+  .svc-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border-soft);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .svc {
+    background: var(--paper);
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: background var(--dur-base) var(--ease-out);
+  }
+  .svc:hover {
+    background: var(--cream);
+  }
+  .svc__title {
+    font-family: var(--font-sans);
+    font-weight: var(--fw-semibold);
+    font-size: var(--text-md);
+    color: var(--text-strong);
+  }
+  .svc__body {
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    color: var(--text-muted);
+  }
+  .services__cta {
+    margin-top: 32px;
+  }
+
+  /* AI */
+  .ai {
+    background: var(--paper);
+  }
+  .ai__title {
+    font-size: var(--text-2xl);
+    line-height: 1.12;
+    margin: 12px 0 0;
+  }
+  .ai__rule {
+    width: 64px;
+    margin: 22px 0;
+  }
+  .ai__lead {
+    max-width: 46ch;
+  }
+  .ai__points {
+    list-style: none;
+    margin: 24px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .ai__points li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: var(--text-sm);
+    line-height: 1.55;
+    color: var(--text-strong);
+  }
+  .ai__check {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--orange-50);
+    display: grid;
+    place-content: center;
+    flex: none;
+    margin-top: 1px;
+  }
+  .ai__actions {
+    margin-top: 30px;
+  }
+
+  /* About */
+  .about {
+    background: var(--ink);
+  }
+  .about__inner {
+    max-width: var(--container-md);
+    padding-block: var(--space-9);
+  }
+  .about__quote {
+    margin: 24px 0 0;
+    padding: 0;
+    border: 0;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: var(--fw-medium);
+    font-size: clamp(1.5rem, 3vw, 2.125rem);
+    line-height: 1.4;
+    color: var(--cream);
+    letter-spacing: -0.01em;
+  }
+  .about__person {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 32px;
+  }
+  .about__avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    flex: none;
+    --portrait-mono: var(--text-base);
+  }
+  .about__name {
+    font-family: var(--font-sans);
+    font-weight: var(--fw-semibold);
+    font-size: var(--text-base);
+    color: var(--cream);
+  }
+  .about__meta {
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    color: var(--grey-400);
+  }
+  .about__link {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    color: var(--orange-300);
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .about__link:hover {
+    color: var(--orange-100);
+  }
+
+  /* keep in sync with --container-md in global.css */
+  @media (max-width: 880px) {
+    .hero__grid,
+    .grid-3,
+    .svc-grid {
+      grid-template-columns: 1fr;
+    }
+    .svc-grid {
+      gap: 1px;
+    }
+  }
+  @media (max-width: 560px) {
+    .about__link {
+      margin-left: 0;
+      width: 100%;
+    }
+    .about__person {
+      flex-wrap: wrap;
+    }
+  }
+</style>

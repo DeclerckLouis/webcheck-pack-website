@@ -1,0 +1,13 @@
+---
+// Packetflow Kicker — wide-tracked overline above headings, with a short
+// orange rule. Mirrors the "PACKETFLOW · JABBEKE" print treatment.
+interface Props {
+  color?: string;
+  class?: string;
+}
+const { color, class: className } = Astro.props;
+---
+
+<span class:list={["kicker", className]} style={color ? `color:${color}` : undefined}>
+  <slot />
+</span>

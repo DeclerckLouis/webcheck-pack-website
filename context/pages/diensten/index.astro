@@ -1,0 +1,147 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import CtaSection from "@/components/CtaSection.astro";
+import Card from "@/components/Card.astro";
+import Badge from "@/components/Badge.astro";
+import Kicker from "@/components/Kicker.astro";
+import Icon from "@/components/Icon.astro";
+import Button from "@/components/Button.astro";
+import Breadcrumbs from "@/components/Breadcrumbs.astro";
+import { services } from "@/data/services";
+import { breadcrumbs } from "@/lib/schema";
+import { url } from "@/lib/url";
+
+const crumbs: [string, string][] = [
+  ["Home", "/"],
+  ["Diensten", "/diensten"],
+];
+const jsonLd = breadcrumbs(crumbs);
+---
+
+<BaseLayout
+  title="Diensten — IT-beheer, zakelijke WiFi, cloud & beveiliging"
+  description="Mijn diensten: IT-beheer & support voor kleine kantoren, zakelijke WiFi & netwerken voor horeca en B&B's, en cloud, backup & beveiliging met AI."
+  jsonLd={jsonLd}
+>
+  <section class="page-hero">
+    <div class="container page-hero__in">
+      <Breadcrumbs items={crumbs} />
+      <Kicker>Diensten</Kicker>
+      <h1>Alles wat een klein kantoor nodig heeft</h1>
+      <p class="lead page-hero__lead">
+        Drie heldere domeinen waarmee ik kleine kantoren, praktijken en horeca in
+        West-Vlaanderen volledig ontzorg — persoonlijk en scherp geprijsd.
+      </p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container svc-hubs">
+      {
+        services.map((hub) => (
+          <Card class="svc-hub">
+            <div class="svc-hub__main">
+              <span class="svc-hub__icon">
+                <Icon name={hub.icon} size={22} color="#fff" />
+              </span>
+              <Badge tone="blue">{hub.audience}</Badge>
+              <h2 class="svc-hub__title">
+                <a href={url(`/diensten/${hub.slug}`)}>{hub.title}</a>
+              </h2>
+              <p class="svc-hub__desc">{hub.description}</p>
+              <Button href={`/diensten/${hub.slug}`} variant="secondary" iconRight="arrow-right">
+                Ontdek {hub.navTitle}
+              </Button>
+            </div>
+            {hub.locals.length > 0 && (
+              <div class="svc-hub__locals">
+                <span class="kicker">In jouw regio</span>
+                <ul>
+                  {hub.locals.map((local) => (
+                    <li>
+                      <a href={url(`/${local.slug}`)}>
+                        <Icon name="map-pin" size={15} color="var(--orange-600)" />
+                        {local.title}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </Card>
+        ))
+      }
+    </div>
+  </section>
+
+  <CtaSection />
+</BaseLayout>
+
+<style>
+  .svc-hubs {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+  }
+  /* `.svc-hub` is the Card component's root, so it carries Card's scope id,
+     not this page's. Target it with :global() or the grid never applies. */
+  .svc-hubs :global(.svc-hub) {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: var(--space-7);
+    align-items: start;
+  }
+  .svc-hub__icon {
+    width: 46px;
+    height: 46px;
+    border-radius: var(--radius-md);
+    background: var(--ink);
+    display: grid;
+    place-content: center;
+    margin-bottom: var(--space-4);
+  }
+  .svc-hubs :global(.svc-hub .badge) {
+    margin-bottom: var(--space-3);
+  }
+  .svc-hub__title {
+    font-size: var(--text-xl);
+    margin: 0 0 var(--space-3);
+  }
+  .svc-hub__title a:hover {
+    color: var(--primary);
+  }
+  .svc-hub__desc {
+    color: var(--text-muted);
+    margin-bottom: var(--space-5);
+    max-width: 60ch;
+  }
+  .svc-hub__locals {
+    background: var(--surface-sunken);
+    border-radius: var(--radius-md);
+    padding: var(--space-5);
+  }
+  .svc-hub__locals ul {
+    list-style: none;
+    margin: var(--space-4) 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .svc-hub__locals a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--text-sm);
+    color: var(--text-body);
+  }
+  .svc-hub__locals a:hover {
+    color: var(--text-strong);
+  }
+  /* keep in sync with --container-md in global.css */
+  @media (max-width: 880px) {
+    .svc-hubs :global(.svc-hub) {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

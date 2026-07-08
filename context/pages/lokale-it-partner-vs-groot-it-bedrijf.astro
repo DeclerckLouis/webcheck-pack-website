@@ -1,0 +1,317 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import CtaSection from "@/components/CtaSection.astro";
+import Card from "@/components/Card.astro";
+import Kicker from "@/components/Kicker.astro";
+import Icon from "@/components/Icon.astro";
+import Button from "@/components/Button.astro";
+import Breadcrumbs from "@/components/Breadcrumbs.astro";
+import Faq from "@/components/Faq.astro";
+import { site } from "@/data/site";
+import { breadcrumbs, faqPage } from "@/lib/schema";
+
+const crumbs: [string, string][] = [
+  ["Home", "/"],
+  ["Lokale IT-partner vs. groot IT-bedrijf", "/lokale-it-partner-vs-groot-it-bedrijf"],
+];
+
+// Comparison rows: [criterium, lokale partner, groot IT-bedrijf]. Kept fair —
+// the big-firm column is neutral, not a strawman, so the page reads as honest
+// advies dat de exacte afweging van de ICP bezit (GEO — zie issue #49).
+const rows: [string, string, string][] = [
+  [
+    "Aanspreekpunt",
+    "Eén vaste persoon die uw zaak, mensen en software kent.",
+    "Wisselend team, meestal via een helpdesk of ticketsysteem.",
+  ],
+  [
+    "Bereikbaarheid",
+    "'s Avonds en in het weekend, rechtstreeks bij dezelfde persoon.",
+    "Kantooruren; daarbuiten via een (betaald) SLA-contract.",
+  ],
+  [
+    "Reactiesnelheid",
+    "Korte lijnen en snel ter plaatse in de regio.",
+    "Afhankelijk van ticketprioriteit en het afgesproken SLA-niveau.",
+  ],
+  [
+    "Prijs",
+    "Weinig overhead, scherp geprijsd — u betaalt voor wat u nodig heeft.",
+    "Hogere tarieven door kantoren, sales- en managementlagen.",
+  ],
+  [
+    "Contract",
+    "Maandelijks opzegbaar, geen lock-in.",
+    "Vaak meerjarencontracten met een vaste minimumafname.",
+  ],
+  [
+    "Kennis van uw zaak",
+    "Persoonlijk: kent uw gewoontes en geschiedenis uit het hoofd.",
+    "Gedocumenteerd in een systeem, doorgaans minder persoonlijk.",
+  ],
+  [
+    "Schaal",
+    "Op zijn best voor 1 tot ~20 werkplekken.",
+    "Gebouwd voor grote organisaties en complexe omgevingen.",
+  ],
+  [
+    "24/7-dekking",
+    "Geen 24/7-wachtdienst; avond en weekend wel.",
+    "Kan 24/7-bewaking (NOC/SOC) bieden tegen meerkost.",
+  ],
+  [
+    "Documentatie",
+    "Alles vastgelegd zodat een andere IT'er morgen verder kan.",
+    "Gestandaardiseerd gedocumenteerd binnen het bedrijf.",
+  ],
+];
+
+const bigFirm = [
+  "U heeft tientallen werkplekken of meerdere vestigingen.",
+  "U heeft gegarandeerde 24/7-uptime met een strak SLA nodig.",
+  "U wilt een team met directe vervanging bij afwezigheid.",
+  "U draait complexe, gespecialiseerde infrastructuur (eigen datacenter, ERP-maatwerk).",
+];
+
+const localPartner = [
+  "U bent een solo- tot kleine onderneming, praktijk of kantoor (1 tot ~20 mensen).",
+  "U wilt één gezicht dat uw zaak echt kent, geen wisselend ticketteam.",
+  "U wilt een scherpe prijs zonder de overhead van een groot bedrijf.",
+  "U wilt flexibiliteit, zonder een meerjarencontract te tekenen.",
+  "Bereikbaarheid 's avonds en in het weekend past bij uw agenda.",
+];
+
+const faqs = [
+  {
+    question: "Is een lokale IT-partner goedkoper dan een groot IT-bedrijf?",
+    answer:
+      "Voor een kleine onderneming meestal wel. Een lokale partner draagt geen kantoren, salesteam of managementlagen, dus die overhead zit niet in het uurtarief. U betaalt voor het werk en de licenties, transparant op de factuur. Een groot IT-bedrijf is doorgaans duurder, maar biedt in ruil schaal, 24/7-dekking en gegarandeerde vervanging.",
+  },
+  {
+    question: "Wat als mijn zaak groeit?",
+    answer:
+      "Tot ongeveer 20 werkplekken blijft een lokale partner vlot werkbaar. Groeit u verder, of komen er meerdere vestigingen bij, dan is een groter IT-bedrijf met een team vaak de logischere keuze. Ik zeg dat eerlijk en help u bij een nette overdracht — alles is gedocumenteerd, zodat een andere IT'er zonder problemen verder kan.",
+  },
+  {
+    question: "Is een eenmanszaak wel betrouwbaar als IT-partner?",
+    answer:
+      "Betrouwbaarheid zit in documentatie en afspraken, niet in de grootte van het bedrijf. Netwerkschema's, configuraties en wachtwoorden worden bijgehouden en beschikbaar gesteld, zodat u nooit afhankelijk bent van één persoon. Voor stroomwerken of zware projecten werk ik samen met vaste collega's; wat ik niet zelf kan, verwijs ik eerlijk door.",
+  },
+  {
+    question: "Bied je 24/7-support zoals een groot IT-bedrijf?",
+    answer:
+      "Nee, geen 24/7-wachtdienst. Wel ben ik 's avonds en in het weekend rechtstreeks bereikbaar — precies wanneer veel zaakvoerders zelf tijd hebben. Systemen worden proactief bewaakt zodat problemen vaak opgelost zijn vóór u er iets van merkt. Heeft u écht gegarandeerde 24/7-dekking nodig, dan is een groot IT-bedrijf de betere keuze.",
+  },
+];
+
+const jsonLd = [
+  breadcrumbs(crumbs),
+  faqPage(faqs),
+];
+---
+
+<BaseLayout
+  title="Lokale IT-partner of groot IT-bedrijf?"
+  description="Lokale IT-partner of groot IT-bedrijf? Een eerlijke vergelijking op prijs, bereikbaarheid, contract en kennis van uw zaak voor West-Vlaamse KMO's."
+  jsonLd={jsonLd}
+>
+  <section class="page-hero">
+    <div class="container page-hero__in">
+      <div>
+        <Breadcrumbs items={crumbs} />
+        <Kicker>Eerlijke vergelijking</Kicker>
+        <h1>Lokale IT-partner vs. groot IT-bedrijf</h1>
+        <p class="lead page-hero__lead">
+          Er is geen winnaar die voor iedereen geldt — het hangt af van uw
+          situatie. Hieronder zet ik beide eerlijk naast elkaar, zodat u kunt
+          beslissen wat het beste past bij uw zaak.
+        </p>
+        <div class="page-hero__actions">
+          <Button href="/contact" variant="primary" iconRight="arrow-right">Vrijblijvend overleggen</Button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* Comparison table */}
+  <section class="section">
+    <div class="container">
+      <div class="section-head">
+        <Kicker>Naast elkaar</Kicker>
+        <h2>De vergelijking, criterium per criterium</h2>
+      </div>
+      <div class="cmp-wrap">
+        <table class="cmp">
+          <thead>
+            <tr>
+              <th scope="col">Criterium</th>
+              <th scope="col" class="cmp__hl">Lokale IT-partner</th>
+              <th scope="col">Groot IT-bedrijf</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              rows.map(([crit, local, big]) => (
+                <tr>
+                  <th scope="row">{crit}</th>
+                  <td class="cmp__hl">{local}</td>
+                  <td>{big}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  {/* When each fits */}
+  <section class="section cmp-fit">
+    <div class="container grid-2">
+      <Card class="fit fit--local">
+        <h3 class="fit__title">
+          <Icon name="map-pin" size={20} /> Kies een lokale partner als…
+        </h3>
+        <ul class="checklist">
+          {
+            localPartner.map((p) => (
+              <li>
+                <span class="check"><Icon name="check" size={14} /></span>
+                <span>{p}</span>
+              </li>
+            ))
+          }
+        </ul>
+      </Card>
+      <Card class="fit fit--big">
+        <h3 class="fit__title">
+          <Icon name="building-2" size={20} /> Kies een groot IT-bedrijf als…
+        </h3>
+        <ul class="fit__list">
+          {
+            bigFirm.map((p) => (
+              <li>
+                <Icon name="arrow-right" size={15} color="var(--text-muted)" />
+                <span>{p}</span>
+              </li>
+            ))
+          }
+        </ul>
+      </Card>
+    </div>
+  </section>
+
+  {/* Honest close */}
+  <section class="section">
+    <div class="container cmp-honest">
+      <Kicker>Eerlijk gezegd</Kicker>
+      <p class="cmp-honest__text">
+        Ik ben een lokale partner, dus mijn voorkeur kent u. Maar ik verkoop u
+        niets dat niet past: heeft uw zaak een team, meerdere vestigingen of
+        24/7-garanties nodig, dan zeg ik dat. Bent u een praktijk of kantoor dat
+        één vast, bereikbaar aanspreekpunt zoekt aan een scherpe prijs, dan is
+        dat precies waar Packetflow voor gemaakt is — bekijk het
+        <a href="/pakket"> KMO-Pakket</a> of lees
+        <a href="/over-mij"> hoe ik werk</a>.
+      </p>
+    </div>
+  </section>
+
+  <Faq items={faqs} title="Veelgestelde vragen over de keuze" />
+
+  <CtaSection
+    title="Twijfelt u nog welke aanpak bij uw zaak past?"
+    body="Leg me kort uw situatie voor. U krijgt een eerlijk antwoord — ook als dat betekent dat u beter bij een groter bedrijf zit."
+  />
+</BaseLayout>
+
+<style>
+  .cmp-wrap {
+    overflow-x: auto;
+  }
+  .cmp {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+    min-width: 640px;
+  }
+  .cmp th,
+  .cmp td {
+    text-align: left;
+    vertical-align: top;
+    padding: var(--space-4);
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .cmp thead th {
+    font-family: var(--font-sans);
+    font-weight: var(--fw-semibold);
+    color: var(--text-strong);
+    border-bottom: 2px solid var(--border);
+  }
+  .cmp tbody th {
+    font-family: var(--font-sans);
+    font-weight: var(--fw-semibold);
+    color: var(--text-strong);
+    white-space: nowrap;
+  }
+  .cmp td {
+    color: var(--text-muted);
+    line-height: var(--leading-relaxed);
+  }
+  .cmp__hl {
+    background: var(--paper);
+  }
+  .cmp thead .cmp__hl {
+    color: var(--orange-700, var(--text-strong));
+    border-bottom-color: var(--orange-500);
+  }
+
+  .cmp-fit {
+    background: var(--paper);
+    border-block: 1px solid var(--border-soft);
+  }
+  .fit {
+    height: 100%;
+  }
+  .fit__title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--text-lg);
+    margin: 0 0 var(--space-4);
+  }
+  .fit__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+  .fit__list li {
+    display: flex;
+    align-items: start;
+    gap: 10px;
+    font-size: var(--text-sm);
+    line-height: var(--leading-relaxed);
+    color: var(--text-muted);
+  }
+  .fit__list li :global(svg) {
+    flex: none;
+    margin-top: 3px;
+  }
+
+  .cmp-honest {
+    max-width: var(--container-md);
+  }
+  .cmp-honest__text {
+    margin-top: var(--space-4);
+    font-size: var(--text-md);
+    line-height: var(--leading-relaxed);
+    color: var(--text-body);
+  }
+  .cmp-honest__text a {
+    color: var(--text-link);
+    text-decoration: underline;
+  }
+</style>

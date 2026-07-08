@@ -1,0 +1,446 @@
+---
+import { site, mainNav } from "@/data/site";
+import { sectors } from "@/data/sectors";
+import { services } from "@/data/services";
+import Logo from "./Logo.astro";
+import Button from "./Button.astro";
+import Icon from "./Icon.astro";
+import { url, cleanPath } from "@/lib/url";
+
+const path = cleanPath(Astro.url.pathname);
+const isActive = (href: string) => {
+  const h = url(href);
+  return h === "/" ? path === h : path === h || path.startsWith(h + "/");
+};
+
+// Dropdown contents, keyed by the `dropdown` marker on a nav item. Each child
+// keeps its own page, so these are plain links into the existing hubs.
+type DropdownItem = { label: string; href: string; description: string; icon: string };
+const dropdowns: Record<string, DropdownItem[]> = {
+  sectors: sectors.map((s) => ({
+    label: s.navTitle,
+    href: `/sectoren/${s.slug}`,
+    description: s.tagline,
+    icon: s.icon,
+  })),
+  services: services.map((s) => ({
+    label: s.navTitle,
+    href: `/diensten/${s.slug}`,
+    description: s.tagline,
+    icon: s.icon,
+  })),
+};
+---
+
+<header class="site-header">
+  <div class="site-header__in">
+    <a href={url("/")} aria-label="Packetflow — home">
+      <Logo variant="full" size={30} />
+    </a>
+
+    <nav class="site-nav" aria-label="Hoofdnavigatie">
+      {
+        mainNav.map((item) => {
+          const children = "dropdown" in item ? dropdowns[item.dropdown] : undefined;
+          if (!children) {
+            return (
+              <a
+                href={url(item.href)}
+                aria-current={isActive(item.href) ? "page" : undefined}
+                class:list={["site-nav__link", isActive(item.href) && "is-active"]}
+              >
+                {item.label}
+              </a>
+            );
+          }
+          return (
+            <div class="site-nav__item">
+              <a
+                href={url(item.href)}
+                aria-current={isActive(item.href) ? "page" : undefined}
+                aria-haspopup="true"
+                class:list={["site-nav__link", "site-nav__link--parent", isActive(item.href) && "is-active"]}
+              >
+                {item.label}
+                <Icon name="chevron-down" size={15} class="site-nav__caret" />
+              </a>
+              <div class="site-nav__dropdown">
+                <ul class="site-nav__menu" role="menu">
+                  {children.map((c) => (
+                    <li role="none">
+                      <a
+                        role="menuitem"
+                        href={url(c.href)}
+                        aria-current={isActive(c.href) ? "page" : undefined}
+                        class:list={["site-nav__menu-link", isActive(c.href) && "is-active"]}
+                      >
+                        <span class="site-nav__menu-icon"><Icon name={c.icon} size={18} /></span>
+                        <span class="site-nav__menu-text">
+                          <span class="site-nav__menu-title">{c.label}</span>
+                          <span class="site-nav__menu-desc">{c.description}</span>
+                        </span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          );
+        })
+      }
+    </nav>
+
+    <div class="site-header__actions">
+      <a href={site.phoneHref} class="site-header__phone">
+        <Icon name="phone" size={16} />
+        {site.phone}
+      </a>
+      <Button href="/contact" variant="primary" size="sm" class="site-header__cta">Plan een gesprek</Button>
+      <button
+        type="button"
+        class="nav-toggle"
+        aria-label="Menu openen"
+        aria-expanded="false"
+        aria-controls="mobile-menu"
+      >
+        <Icon name="menu" size={22} class="nav-toggle__open" />
+        <Icon name="x" size={22} class="nav-toggle__close" />
+      </button>
+    </div>
+  </div>
+
+  <nav class="mobile-menu" id="mobile-menu" aria-label="Mobiele navigatie" hidden>
+    <ul class="mobile-menu__list">
+      {
+        mainNav.map((item) => {
+          const children = "dropdown" in item ? dropdowns[item.dropdown] : undefined;
+          return (
+            <li class="mobile-menu__group">
+              <a
+                href={url(item.href)}
+                aria-current={isActive(item.href) ? "page" : undefined}
+                class:list={["mobile-menu__link", isActive(item.href) && "is-active"]}
+              >
+                {item.label}
+              </a>
+              {children && (
+                <ul class="mobile-menu__sub">
+                  {children.map((c) => (
+                    <li>
+                      <a
+                        href={url(c.href)}
+                        aria-current={isActive(c.href) ? "page" : undefined}
+                        class:list={["mobile-menu__sublink", isActive(c.href) && "is-active"]}
+                      >
+                        <span class="mobile-menu__subicon"><Icon name={c.icon} size={16} /></span>
+                        {c.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          );
+        })
+      }
+    </ul>
+    <div class="mobile-menu__foot">
+      <a href={site.phoneHref} class="mobile-menu__phone">
+        <Icon name="phone" size={16} />
+        {site.phone}
+      </a>
+      <Button href="/contact" variant="primary" size="sm" fullWidth>Plan een gesprek</Button>
+    </div>
+  </nav>
+</header>
+
+<script>
+  const toggle = document.querySelector<HTMLButtonElement>(".nav-toggle");
+  const menu = document.getElementById("mobile-menu");
+  if (toggle && menu) {
+    const setOpen = (open: boolean) => {
+      toggle.setAttribute("aria-expanded", String(open));
+      toggle.setAttribute("aria-label", open ? "Menu sluiten" : "Menu openen");
+      menu.toggleAttribute("hidden", !open);
+      document.body.classList.toggle("nav-open", open);
+    };
+    toggle.addEventListener("click", () =>
+      setOpen(toggle.getAttribute("aria-expanded") !== "true"),
+    );
+    // Close after navigating, or on Escape.
+    menu.addEventListener("click", (e) => {
+      if ((e.target as HTMLElement).closest("a")) setOpen(false);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") setOpen(false);
+    });
+  }
+</script>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: rgba(251, 249, 244, 0.85);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .site-header__in {
+    max-width: var(--container-lg);
+    margin: 0 auto;
+    padding: 14px var(--space-5);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-5);
+  }
+  .site-nav {
+    display: flex;
+    gap: 28px;
+    align-items: center;
+  }
+  .site-nav__link {
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    color: var(--text-body);
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .site-nav__link:hover,
+  .site-nav__link.is-active {
+    color: var(--text-strong);
+  }
+
+  /* Dropdown parent */
+  .site-nav__item {
+    position: relative;
+  }
+  .site-nav__link--parent {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .site-nav__caret {
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+  .site-nav__item:hover .site-nav__caret,
+  .site-nav__item:focus-within .site-nav__caret {
+    transform: rotate(180deg);
+  }
+
+  /* The flyout. `padding-top` is an invisible bridge so the menu doesn't
+     close while the pointer travels from the link down to the panel. */
+  .site-nav__dropdown {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translate(-50%, 6px);
+    padding-top: 12px;
+    min-width: 320px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      opacity var(--dur-fast) var(--ease-out),
+      transform var(--dur-fast) var(--ease-out),
+      visibility var(--dur-fast) var(--ease-out);
+  }
+  .site-nav__item:hover .site-nav__dropdown,
+  .site-nav__item:focus-within .site-nav__dropdown {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translate(-50%, 0);
+  }
+
+  .site-nav__menu {
+    list-style: none;
+    margin: 0;
+    padding: 8px;
+    background: var(--paper, #fff);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg, var(--shadow-md));
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .site-nav__menu-link {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm, 8px);
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .site-nav__menu-link:hover,
+  .site-nav__menu-link:focus-visible,
+  .site-nav__menu-link.is-active {
+    background: var(--surface-sunken, var(--cream));
+  }
+  .site-nav__menu-icon {
+    flex: none;
+    display: grid;
+    place-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm, 8px);
+    background: var(--cream);
+    color: var(--primary);
+  }
+  .site-nav__menu-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .site-nav__menu-title {
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    color: var(--text-strong);
+  }
+  .site-nav__menu-desc {
+    font-size: var(--text-xs, 12px);
+    line-height: 1.4;
+    color: var(--text-muted);
+  }
+
+  .site-header__actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .site-header__phone {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    color: var(--text-strong);
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .site-header__phone:hover {
+    color: var(--primary);
+  }
+
+  /* ---- Mobile toggle + menu (hidden on desktop) ---- */
+  .nav-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    margin-right: -6px;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-sm);
+    background: var(--surface-raised, #fff);
+    color: var(--text-strong);
+    cursor: pointer;
+  }
+  /* The icons are rendered by the <Icon> child component, so their classes
+     don't carry this file's scope attribute — target them via :global, kept
+     tight under the scoped .nav-toggle. */
+  .nav-toggle :global(.nav-toggle__close) {
+    display: none;
+  }
+  .nav-toggle[aria-expanded="true"] :global(.nav-toggle__open) {
+    display: none;
+  }
+  .nav-toggle[aria-expanded="true"] :global(.nav-toggle__close) {
+    display: inline-flex;
+  }
+
+  .mobile-menu {
+    border-top: 1px solid var(--border-soft);
+    background: var(--paper, #fff);
+    padding: var(--space-4) var(--space-5) var(--space-5);
+  }
+  .mobile-menu[hidden] {
+    display: none;
+  }
+  .mobile-menu__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .mobile-menu__group {
+    border-bottom: 1px solid var(--border-soft);
+    padding: var(--space-2) 0;
+  }
+  .mobile-menu__link {
+    display: block;
+    padding: 10px 0;
+    font-family: var(--font-sans);
+    font-size: var(--text-md);
+    font-weight: var(--fw-semibold);
+    color: var(--text-strong);
+  }
+  .mobile-menu__link.is-active {
+    color: var(--primary);
+  }
+  .mobile-menu__sub {
+    list-style: none;
+    margin: 0 0 8px;
+    padding: 0;
+  }
+  .mobile-menu__sublink {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0 8px 4px;
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    color: var(--text-body);
+  }
+  .mobile-menu__sublink.is-active {
+    color: var(--primary);
+  }
+  .mobile-menu__subicon {
+    display: grid;
+    place-content: center;
+    width: 28px;
+    height: 28px;
+    flex: none;
+    border-radius: var(--radius-sm, 8px);
+    background: var(--cream);
+    color: var(--primary);
+  }
+  .mobile-menu__foot {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+  }
+  .mobile-menu__phone {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: var(--font-sans);
+    font-size: var(--text-md);
+    font-weight: var(--fw-medium);
+    color: var(--text-strong);
+  }
+
+  /* keep in sync with --container-md in global.css */
+  @media (max-width: 880px) {
+    .site-nav {
+      display: none;
+    }
+    .nav-toggle {
+      display: inline-flex;
+    }
+  }
+  @media (max-width: 560px) {
+    .site-header__phone {
+      display: none;
+    }
+    /* The CTA is a child <Button>, so it needs :global to be hidden here (it
+       still lives in the open mobile menu's footer). */
+    .site-header__actions :global(.site-header__cta) {
+      display: none;
+    }
+  }
+</style>

@@ -1,0 +1,357 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import CtaSection from "@/components/CtaSection.astro";
+import Card from "@/components/Card.astro";
+import Kicker from "@/components/Kicker.astro";
+import Icon from "@/components/Icon.astro";
+import Button from "@/components/Button.astro";
+import Breadcrumbs from "@/components/Breadcrumbs.astro";
+import Faq from "@/components/Faq.astro";
+import { sectors, type Sector } from "@/data/sectors";
+import { getHub, services } from "@/data/services";
+import { service, breadcrumbs, faqPage } from "@/lib/schema";
+import { url } from "@/lib/url";
+
+export function getStaticPaths() {
+  return sectors.map((sector) => ({ params: { sector: sector.slug }, props: { sector } }));
+}
+interface Props {
+  sector: Sector;
+}
+const { sector } = Astro.props;
+
+const relatedHubs = sector.serviceSlugs.map((s) => getHub(s)).filter(Boolean);
+const allLocalsFlat = services.flatMap((h) => h.locals);
+const relatedLocals = sector.localSlugs
+  .map((s) => allLocalsFlat.find((l) => l.slug === s))
+  .filter(Boolean);
+
+const crumbs: [string, string][] = [
+  ["Home", "/"],
+  ["Voor wie?", "/sectoren"],
+  [sector.navTitle, `/sectoren/${sector.slug}`],
+];
+
+const jsonLd = [
+  service({ name: sector.title, description: sector.description }),
+  breadcrumbs(crumbs),
+  ...(sector.faqs && sector.faqs.length > 0 ? [faqPage(sector.faqs)] : []),
+];
+---
+
+<BaseLayout title={sector.navTitle} description={sector.metaDescription ?? sector.description} jsonLd={jsonLd}>
+  <section class="page-hero">
+    <div class:list={["container", "page-hero__in", sector.image && "sector-hero"]}>
+      <div>
+        <Breadcrumbs items={crumbs} />
+        <h1>{sector.title}</h1>
+        <p class="lead page-hero__lead">{sector.description}</p>
+        <div class="page-hero__actions">
+          <Button href="/contact" variant="primary" iconRight="arrow-right">Vrijblijvend kennismaken</Button>
+        </div>
+      </div>
+      {
+        sector.image && (
+          <div class="sector-hero__media">
+            <img
+              src={url(sector.image)}
+              alt={sector.navTitle}
+              loading="lazy"
+              onerror="this.closest('.sector-hero__media').style.display='none'"
+            />
+          </div>
+        )
+      }
+    </div>
+  </section>
+
+  {/* Pains */}
+  <section class="section">
+    <div class="container">
+      <div class="section-head">
+        <Kicker>Herkenbaar?</Kicker>
+        <h2>{sector.tagline}</h2>
+      </div>
+      <div class="grid-cards">
+        {
+          sector.pains.map((p) => (
+            <Card class="feature">
+              <span class="feature__icon"><Icon name={p.icon} size={20} /></span>
+              <h3>{p.title}</h3>
+              <p>{p.body}</p>
+            </Card>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  {/* Proof strip — anonymised references, only when present (see §3e) */}
+  {
+    sector.references && sector.references.length > 0 && (
+      <section class="section proof">
+        <div class="container">
+          <span class="kicker">Vertrouwd door</span>
+          <ul class="proof__list">
+            {sector.references.map((r) => (
+              <li class="proof__item">
+                <Icon name="badge-check" size={18} color="var(--orange-600)" />
+                {r.label}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )
+  }
+
+  {/* Approach */}
+  <section class="section approach">
+    <div class="container grid-2">
+      <div>
+        <Kicker>Mijn aanpak</Kicker>
+        <h2 class="approach__title">Concreet voor uw zaak</h2>
+        <p class="approach__lead lead">
+          Geen complexe contracten, gewoon persoonlijke service. Dit is wat ik
+          meestal voor zaken als de uwe doe:
+        </p>
+      </div>
+      <ul class="checklist approach__list">
+        {
+          sector.approach.map((a) => (
+            <li>
+              <span class="check"><Icon name="check" size={14} /></span>
+              <span>{a}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  {/* Related services + locals */}
+  <section class="section">
+    <div class="container">
+      <div class="section-head">
+        <Kicker>Relevante diensten</Kicker>
+        <h2>Dit zet ik voor u in</h2>
+      </div>
+      <div class="grid-cards">
+        {
+          relatedHubs.map((hub) => (
+            <a href={url(`/diensten/${hub!.slug}`)} class="rel-link">
+              <Card class="feature">
+                <span class="feature__icon"><Icon name={hub!.icon} size={20} /></span>
+                <h3>{hub!.title}</h3>
+                <p>{hub!.tagline}</p>
+                <span class="rel-link__more">Meer over deze dienst <Icon name="arrow-right" size={15} /></span>
+              </Card>
+            </a>
+          ))
+        }
+      </div>
+
+      {
+        relatedLocals.length > 0 && (
+          <div class="rel-locals">
+            <span class="kicker">Lokaal in uw buurt</span>
+            <ul>
+              {relatedLocals.map((l) => (
+                <li>
+                  <a href={url(`/${l!.slug}`)}>
+                    <Icon name="map-pin" size={15} color="var(--orange-600)" />
+                    {l!.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
+      }
+    </div>
+  </section>
+
+  {/* Spotlight — standalone landing page cross-sell (e.g. Guesty/PMS) */}
+  {
+    sector.spotlight && (
+      <section class="section spotlight">
+        <div class="container">
+          <a href={url(sector.spotlight.href)} class="spotlight__card">
+            <span class="spotlight__icon"><Icon name={sector.spotlight.icon} size={24} /></span>
+            <div class="spotlight__body">
+              <h2 class="spotlight__title">{sector.spotlight.title}</h2>
+              <p class="spotlight__text">{sector.spotlight.body}</p>
+              <span class="spotlight__link">
+                {sector.spotlight.linkLabel} <Icon name="arrow-right" size={16} />
+              </span>
+            </div>
+          </a>
+        </div>
+      </section>
+    )
+  }
+
+  {sector.faqs && sector.faqs.length > 0 && (
+    <Faq items={sector.faqs} title={`Veelgestelde vragen — ${sector.navTitle}`} />
+  )}
+
+  <CtaSection />
+</BaseLayout>
+
+<style>
+  .sector-hero {
+    display: grid;
+    grid-template-columns: 1.25fr 0.75fr;
+    gap: var(--space-7);
+    align-items: center;
+  }
+  .sector-hero__media img {
+    width: 100%;
+    height: 100%;
+    max-height: 320px;
+    object-fit: cover;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+  }
+  /* keep in sync with --container-md in global.css */
+  @media (max-width: 880px) {
+    .sector-hero {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .proof {
+    padding-block: var(--space-7);
+    background: var(--paper);
+    border-block: 1px solid var(--border-soft);
+  }
+  .proof__list {
+    list-style: none;
+    margin: var(--space-4) 0 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-5);
+  }
+  .proof__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    color: var(--text-strong);
+  }
+
+  .approach {
+    background: var(--paper);
+    border-block: 1px solid var(--border-soft);
+  }
+  .approach__title {
+    font-size: var(--text-2xl);
+    margin: var(--space-3) 0 var(--space-4);
+  }
+  .approach__lead {
+    max-width: 46ch;
+  }
+  .approach__list {
+    align-self: center;
+  }
+  .rel-link {
+    display: block;
+  }
+  .rel-link :global(.card) {
+    height: 100%;
+    transition:
+      border-color var(--dur-base) var(--ease-out),
+      box-shadow var(--dur-base) var(--ease-out);
+  }
+  .rel-link:hover :global(.card) {
+    border-color: var(--orange-300);
+    box-shadow: var(--shadow-md);
+  }
+  .rel-link__more {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    color: var(--primary);
+  }
+  .rel-locals {
+    margin-top: var(--space-6);
+    background: var(--surface-sunken);
+    border-radius: var(--radius-md);
+    padding: var(--space-5);
+  }
+  .rel-locals ul {
+    list-style: none;
+    margin: var(--space-4) 0 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+  }
+  .rel-locals a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--text-sm);
+    color: var(--text-body);
+  }
+  .rel-locals a:hover {
+    color: var(--text-strong);
+  }
+
+  .spotlight__card {
+    display: flex;
+    align-items: start;
+    gap: var(--space-5);
+    padding: var(--space-6);
+    background: var(--surface-sunken);
+    border: 1px solid var(--border-soft);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius-lg);
+    transition:
+      border-color var(--dur-base) var(--ease-out),
+      box-shadow var(--dur-base) var(--ease-out);
+  }
+  .spotlight__card:hover {
+    border-color: var(--orange-300);
+    box-shadow: var(--shadow-md);
+  }
+  .spotlight__icon {
+    flex: none;
+    width: 46px;
+    height: 46px;
+    border-radius: var(--radius-md);
+    background: var(--ink);
+    display: grid;
+    place-content: center;
+    color: #fff;
+  }
+  .spotlight__title {
+    font-size: var(--text-lg);
+    margin: 0 0 var(--space-3);
+  }
+  .spotlight__text {
+    color: var(--text-muted);
+    line-height: var(--leading-relaxed);
+    margin: 0 0 var(--space-4);
+    max-width: 68ch;
+  }
+  .spotlight__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    color: var(--primary);
+  }
+  /* keep in sync with --container-md in global.css */
+  @media (max-width: 880px) {
+    .spotlight__card {
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+  }
+</style>

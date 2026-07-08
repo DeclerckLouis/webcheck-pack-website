@@ -1,0 +1,87 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import CtaSection from "@/components/CtaSection.astro";
+import Card from "@/components/Card.astro";
+import Kicker from "@/components/Kicker.astro";
+import Icon from "@/components/Icon.astro";
+import Button from "@/components/Button.astro";
+import Breadcrumbs from "@/components/Breadcrumbs.astro";
+import { sectors } from "@/data/sectors";
+import { breadcrumbs } from "@/lib/schema";
+import { url } from "@/lib/url";
+
+const crumbs: [string, string][] = [
+  ["Home", "/"],
+  ["Voor wie?", "/sectoren"],
+];
+const jsonLd = breadcrumbs(crumbs);
+---
+
+<BaseLayout
+  title="Voor wie? — IT voor praktijken, horeca en verenigingen"
+  description="Packetflow werkt voor kleine kantoren en zaken in West-Vlaanderen: advocaten, architecten en makelaars, horeca en B&B's, en verenigingen en VZW's."
+  jsonLd={jsonLd}
+>
+  <section class="page-hero">
+    <div class="container page-hero__in">
+      <Breadcrumbs items={crumbs} />
+      <Kicker>Voor wie?</Kicker>
+      <h1>IT op maat van uw soort zaak</h1>
+      <p class="lead page-hero__lead">
+        Ik werk vooral voor kleine kantoren en zaken die geen IT-afdeling
+        hebben, maar wél op hun IT moeten kunnen rekenen. Herkent u zich hierin?
+      </p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container grid-cards">
+      {
+        sectors.map((sector) => (
+          <a href={url(`/sectoren/${sector.slug}`)} class="sector-link">
+            <Card class="feature">
+              <span class="feature__icon"><Icon name={sector.icon} size={20} /></span>
+              <h3>{sector.navTitle}</h3>
+              <p>{sector.tagline}</p>
+              <span class="sector-link__more">Bekijk aanpak <Icon name="arrow-right" size={15} /></span>
+            </Card>
+          </a>
+        ))
+      }
+    </div>
+    <div class="container sectors-note">
+      <Button href="/contact" variant="secondary" iconRight="arrow-right">
+        Past uw zaak er niet tussen? Stuur me een bericht
+      </Button>
+    </div>
+  </section>
+
+  <CtaSection />
+</BaseLayout>
+
+<style>
+  .sector-link {
+    display: block;
+  }
+  .sector-link :global(.card) {
+    height: 100%;
+    transition:
+      border-color var(--dur-base) var(--ease-out),
+      box-shadow var(--dur-base) var(--ease-out);
+  }
+  .sector-link:hover :global(.card) {
+    border-color: var(--orange-300);
+    box-shadow: var(--shadow-md);
+  }
+  .sector-link__more {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    color: var(--primary);
+  }
+  .sectors-note {
+    margin-top: var(--space-6);
+  }
+</style>

@@ -1,0 +1,58 @@
+---
+import { site } from "@/data/site";
+import Button from "./Button.astro";
+import Kicker from "./Kicker.astro";
+interface Props {
+  title?: string;
+  body?: string;
+}
+const {
+  title = "30 minuten, kosteloos — bij u of via telefoon",
+  body = "Vertel kort waar het schoentje knelt. Ik antwoord binnen één werkdag — vaak sneller.",
+} = Astro.props;
+---
+
+<section class="section cta">
+  <div class="container cta__inner">
+    <Kicker>Vrijblijvend kennismaken</Kicker>
+    <h2 class="cta__title">{title}</h2>
+    <p class="lead cta__body">{body}</p>
+    <div class="cta__actions">
+      <Button href="/contact" variant="primary" size="lg" iconRight="arrow-right">
+        Plan een gesprek
+      </Button>
+      <Button href={site.phoneHref} variant="secondary" size="lg" iconLeft="phone">
+        Bel {site.phone}
+      </Button>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cta {
+    background: var(--surface-sunken);
+    border-top: 1px solid var(--border-soft);
+  }
+  .cta__inner {
+    max-width: var(--container-md);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .cta__title {
+    font-size: var(--text-2xl);
+    margin: var(--space-3) 0 var(--space-4);
+  }
+  .cta__body {
+    max-width: 48ch;
+    margin: 0 auto;
+  }
+  .cta__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-3);
+    margin-top: var(--space-6);
+  }
+</style>

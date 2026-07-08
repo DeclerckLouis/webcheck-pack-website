@@ -1,0 +1,212 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import CtaSection from "@/components/CtaSection.astro";
+import Kicker from "@/components/Kicker.astro";
+import Icon from "@/components/Icon.astro";
+import Breadcrumbs from "@/components/Breadcrumbs.astro";
+import { site } from "@/data/site";
+import { breadcrumbs } from "@/lib/schema";
+
+const crumbs: [string, string][] = [
+  ["Home", "/"],
+  ["Tarieven", "/tarieven"],
+];
+const jsonLd = breadcrumbs(crumbs);
+
+// Travel zones, measured as radius from Jabbeke. Kept here so the table and any
+// future copy stay in sync.
+const zones = [
+  ["Zone 1", "tot 15 km", "gratis"],
+  ["Zone 2", "15 tot 30 km", "€15"],
+  ["Zone 3", "30 tot 50 km", "€30"],
+];
+
+const description =
+  "De tarieven van Packetflow op een rij: €60/uur (excl. btw) voor losse hulp en transparante verplaatsingskosten. Kennismaking en scoping-bezoek zijn gratis.";
+---
+
+<BaseLayout title="Tarieven" description={description} jsonLd={jsonLd}>
+  <section class="page-hero">
+    <div class="container page-hero__in">
+      <Breadcrumbs items={crumbs} />
+      <Kicker>Tarieven</Kicker>
+      <h1>Tarieven</h1>
+      <p class="lead page-hero__lead">
+        Alles transparant en op voorhand geweten. Hieronder de
+        standaardtarieven. Projecten en installaties krijgen altijd een vaste
+        prijs (forfait) na een gratis scoping-bezoek, zodat u vooraf weet wat
+        het kost.
+      </p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container tarieven">
+      <div class="tarief">
+        <h2>Losse hulp per uur</h2>
+        <p class="tarief__amount">€60 <span>/ uur (excl. btw)</span></p>
+        <p class="tarief__body">
+          U betaalt voor de tijd die ik effectief werk. Geen abonnement en geen
+          verborgen kosten. Liever een vaste maandprijs met interventies
+          inbegrepen? Bekijk dan het <a href="/pakket">KMO-Pakket</a>.
+        </p>
+      </div>
+
+      <div class="tarief" id="verplaatsingskosten">
+        <h2>Verplaatsingskosten</h2>
+        <p class="tarief__body">
+          Voor betaald werk ter plaatse, volgens de afstand vanuit {site.address.city}.
+          Een eerste kennismaking en het scoping-bezoek zijn altijd gratis.
+        </p>
+        <table class="tarief__table">
+          <thead>
+            <tr>
+              <th>Zone</th>
+              <th>Straal vanuit {site.address.city}</th>
+              <th>Verplaatsingskost (excl. btw)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              zones.map(([zone, straal, kost]) => (
+                <tr>
+                  <td>{zone}</td>
+                  <td>{straal}</td>
+                  <td class="tarief__price">{kost}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+
+        <ul class="tarief__notes">
+          <li>
+            <span class="tarief__check"><Icon name="check" size={14} /></span>
+            <span>Een eerste kennismaking en het scoping-bezoek ter plaatse zijn altijd gratis.</span>
+          </li>
+          <li>
+            <span class="tarief__check"><Icon name="check" size={14} /></span>
+            <span>Klanten met het <a class="nowrap" href="/pakket">KMO-Pakket</a> hebben verplaatsing inbegrepen in zone 1 en 2. Daarbuiten geldt het standaardtarief.</span>
+          </li>
+          <li>
+            <span class="tarief__check"><Icon name="check" size={14} /></span>
+            <span>Buiten zone 3 bekijken we het geval per geval.</span>
+          </li>
+        </ul>
+      </div>
+
+      <p class="tarieven__foot">
+        Benieuwd wat IT-beheer een kleine onderneming gemiddeld kost? Lees
+        <a href="/blog/wat-kost-it-beheer-kleine-onderneming">wat IT-beheer kost voor een kleine onderneming</a>.
+        Twijfelt u wat uw situatie kost? <a href="/contact">Vraag vrijblijvend een offerte</a>,
+        dan krijgt u een heldere richtprijs.
+      </p>
+    </div>
+  </section>
+
+  <CtaSection />
+</BaseLayout>
+
+<style>
+  .tarieven {
+    max-width: var(--container-md);
+  }
+  .tarief {
+    padding-bottom: var(--space-7);
+    margin-bottom: var(--space-7);
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .tarief h2 {
+    margin-bottom: var(--space-3);
+  }
+  .tarief__amount {
+    font-size: var(--text-3xl);
+    font-weight: var(--fw-bold);
+    color: var(--text-strong);
+    line-height: 1.1;
+    margin-bottom: var(--space-3);
+  }
+  .tarief__amount span {
+    font-size: var(--text-base);
+    font-weight: var(--fw-regular);
+    color: var(--text-muted);
+  }
+  .tarief__body {
+    font-size: var(--text-base);
+    color: var(--text-body);
+    line-height: var(--leading-relaxed);
+    margin-bottom: var(--space-5);
+    max-width: 60ch;
+  }
+  .tarief__body a {
+    color: var(--text-link);
+    text-decoration: underline;
+  }
+  .tarief__table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: var(--space-5);
+  }
+  .tarief__table th,
+  .tarief__table td {
+    text-align: left;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .tarief__table th {
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: var(--fw-semibold);
+    color: var(--text-strong);
+  }
+  .tarief__table td {
+    font-size: var(--text-base);
+    color: var(--text-body);
+  }
+  .tarief__price {
+    font-weight: var(--fw-semibold);
+    color: var(--text-strong);
+  }
+  .tarief__notes {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .tarief__notes li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: var(--text-base);
+    color: var(--text-body);
+    line-height: var(--leading-relaxed);
+  }
+  .tarief__notes a {
+    color: var(--text-link);
+    text-decoration: underline;
+  }
+  .nowrap {
+    white-space: nowrap;
+  }
+  .tarief__check {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--orange-50);
+    color: var(--orange-600);
+    display: grid;
+    place-content: center;
+    flex: none;
+    margin-top: 1px;
+  }
+  .tarieven__foot {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+  }
+  .tarieven__foot a {
+    color: var(--text-link);
+    text-decoration: underline;
+  }
+</style>

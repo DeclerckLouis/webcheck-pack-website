@@ -1,0 +1,152 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import CtaSection from "@/components/CtaSection.astro";
+import Card from "@/components/Card.astro";
+import Kicker from "@/components/Kicker.astro";
+import Icon from "@/components/Icon.astro";
+import Breadcrumbs from "@/components/Breadcrumbs.astro";
+import { getPublishedPosts, formatDate } from "@/lib/blog";
+import { breadcrumbs } from "@/lib/schema";
+import { url } from "@/lib/url";
+import { site } from "@/data/site";
+
+const posts = await getPublishedPosts();
+
+const crumbs: [string, string][] = [
+  ["Home", "/"],
+  ["Blog", "/blog"],
+];
+const jsonLd = breadcrumbs(crumbs);
+
+const description =
+  "Praktische inzichten over IT, beveiliging en e-facturatie voor praktijken, kantoren en lokale zaken in West-Vlaanderen — zonder jargon.";
+---
+
+<BaseLayout title="Blog — IT-inzichten zonder jargon" description={description} jsonLd={jsonLd}>
+  <section class="page-hero">
+    <div class="container page-hero__in">
+      <Breadcrumbs items={crumbs} />
+      <Kicker>Inzichten</Kicker>
+      <h1>Praktische IT-inzichten, zonder jargon</h1>
+      <p class="lead page-hero__lead">{description}</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      {
+        posts.length === 0 ? (
+          <p class="blog-empty">Binnenkort verschijnen hier de eerste artikels.</p>
+        ) : (
+          <ul class="blog-grid">
+            {posts.map((post) => (
+              <li>
+                <a href={url(`/blog/${post.id}`)} class="post-card">
+                  <Card class="post-card__inner">
+                    {post.data.tags.length > 0 && (
+                      <span class="post-card__tag">{post.data.tags[0]}</span>
+                    )}
+                    <h2 class="post-card__title">{post.data.title}</h2>
+                    <p class="post-card__desc">{post.data.description}</p>
+                    <div class="post-card__meta">
+                      <time datetime={post.data.pubDate.toISOString()}>
+                        {formatDate(post.data.pubDate)}
+                      </time>
+                      <span class="post-card__more">
+                        Lees artikel <Icon name="arrow-right" size={15} />
+                      </span>
+                    </div>
+                  </Card>
+                </a>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </div>
+  </section>
+
+  <CtaSection
+    title="Een vraag die hier nog niet beantwoord is?"
+    body={`Stel ze gerust. Ik denk vrijblijvend met u mee — als lokale IT-partner in ${site.serviceArea}.`}
+  />
+</BaseLayout>
+
+<style>
+  .blog-grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-5);
+  }
+  .post-card {
+    display: block;
+    height: 100%;
+  }
+  .post-card :global(.post-card__inner) {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    transition:
+      border-color var(--dur-base) var(--ease-out),
+      box-shadow var(--dur-base) var(--ease-out);
+  }
+  .post-card:hover :global(.post-card__inner) {
+    border-color: var(--orange-300);
+    box-shadow: var(--shadow-md);
+  }
+  .post-card__tag {
+    align-self: flex-start;
+    font-family: var(--font-sans);
+    font-size: var(--text-2xs);
+    font-weight: var(--fw-semibold);
+    letter-spacing: var(--tracking-kicker);
+    text-transform: uppercase;
+    color: var(--orange-600);
+  }
+  .post-card__title {
+    font-size: var(--text-lg);
+    margin: 0;
+  }
+  .post-card__desc {
+    font-size: var(--text-sm);
+    line-height: 1.65;
+    color: var(--text-muted);
+    margin: 0;
+    flex: 1;
+  }
+  .post-card__meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-top: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+  }
+  .post-card__more {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: var(--fw-medium);
+    color: var(--primary);
+  }
+  .blog-empty {
+    color: var(--text-muted);
+  }
+  .blog-grid > li:last-child:nth-child(odd) {
+    grid-column: span 2;
+  }
+  /* keep in sync with --container-md in global.css */
+  @media (max-width: 880px) {
+    .blog-grid {
+      grid-template-columns: 1fr;
+    }
+    .blog-grid > li:last-child:nth-child(odd) {
+      grid-column: span 1;
+    }
+  }
+</style>

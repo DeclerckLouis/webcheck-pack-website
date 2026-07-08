@@ -1,0 +1,232 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import CtaSection from "@/components/CtaSection.astro";
+import Card from "@/components/Card.astro";
+import Icon from "@/components/Icon.astro";
+import Button from "@/components/Button.astro";
+import Kicker from "@/components/Kicker.astro";
+import Breadcrumbs from "@/components/Breadcrumbs.astro";
+import { site } from "@/data/site";
+import { allLocals, type LocalPage, type ServiceHub } from "@/data/services";
+import { service, breadcrumbs } from "@/lib/schema";
+import { url } from "@/lib/url";
+
+// Flat, root-level slugs (e.g. /it-support-oudenburg). Static routes like
+// /pakket and /contact take priority, so there is no collision.
+export function getStaticPaths() {
+  return allLocals().map((local) => ({ params: { local: local.slug }, props: { local } }));
+}
+interface Props {
+  local: LocalPage & { hub: ServiceHub };
+}
+const { local } = Astro.props;
+const { hub } = local;
+const siblings = hub.locals.filter((l) => l.slug !== local.slug);
+
+const crumbs: [string, string][] = [
+  ["Home", "/"],
+  ["Diensten", "/diensten"],
+  [hub.navTitle, `/diensten/${hub.slug}`],
+  [local.city, `/${local.slug}`],
+];
+
+const jsonLd = [
+  service({
+    name: local.title,
+    description: local.description,
+    serviceType: hub.title,
+    areaName: local.city,
+  }),
+  breadcrumbs(crumbs),
+];
+---
+
+<BaseLayout title={local.title} description={local.description} jsonLd={jsonLd}>
+  <section class="page-hero">
+    <div class="container page-hero__in">
+      <Breadcrumbs items={crumbs} />
+      <h1>{local.title}</h1>
+      <p class="lead page-hero__lead">{local.intro}</p>
+      <div class="page-hero__actions">
+        <Button href="/contact" variant="primary" iconRight="arrow-right">Vraag info aan</Button>
+        <Button href={site.phoneHref} variant="secondary" iconLeft="phone">Bel {site.phone}</Button>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container local-grid">
+      <div class="prose">
+        <Kicker>Waarom Packetflow in {local.city}</Kicker>
+        <p class="local-context">{local.context}</p>
+        <ul class="checklist">
+          {
+            local.highlights.map((h) => (
+              <li>
+                <span class="check"><Icon name="check" size={14} /></span>
+                <span>{h}</span>
+              </li>
+            ))
+          }
+        </ul>
+        <Card class="local-hubcard">
+          <p>{hub.description}</p>
+          <a href={url(`/diensten/${hub.slug}`)} class="local-hubcard__link">
+            Alles over {hub.navTitle} <Icon name="arrow-right" size={15} />
+          </a>
+        </Card>
+      </div>
+
+      <aside class="local-aside">
+        <Card>
+          <h2 class="local-aside__title">In het kort</h2>
+          <dl class="local-facts">
+            <div><dt>Dienst</dt><dd>{hub.navTitle}</dd></div>
+            <div><dt>Regio</dt><dd>{local.city}</dd></div>
+            <div><dt>Voor</dt><dd>{hub.audience}</dd></div>
+            <div><dt>Bereikbaar</dt><dd>'s Avonds &amp; in het weekend</dd></div>
+          </dl>
+        </Card>
+        {
+          siblings.length > 0 && (
+            <Card>
+              <h2 class="local-aside__title">Ook in de buurt</h2>
+              <ul class="local-siblings">
+                {siblings.map((s) => (
+                  <li>
+                    <a href={url(`/${s.slug}`)}>
+                      <Icon name="map-pin" size={15} color="var(--orange-600)" />
+                      {s.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )
+        }
+        {
+          local.related && (
+            <Card class="local-related">
+              <h2 class="local-aside__title">{local.related.title}</h2>
+              <p class="local-related__body">{local.related.body}</p>
+              <a href={url(local.related.href)} class="local-related__link">
+                Meer weten <Icon name="arrow-right" size={15} />
+              </a>
+            </Card>
+          )
+        }
+      </aside>
+    </div>
+  </section>
+
+  <CtaSection />
+</BaseLayout>
+
+<style>
+  .local-grid {
+    display: grid;
+    grid-template-columns: 1.7fr 1fr;
+    gap: var(--space-7);
+    align-items: start;
+  }
+  .local-context {
+    font-family: var(--font-display);
+    font-size: var(--text-md);
+    line-height: 1.6;
+    color: var(--text-strong);
+    margin: var(--space-4) 0 var(--space-6);
+  }
+  /* Card root carries the Card component's scope, not this page's —
+     target it with :global() so these styles actually apply. */
+  .local-grid :global(.local-hubcard) {
+    margin-top: var(--space-6);
+    background: var(--surface-sunken);
+  }
+  .local-hubcard p {
+    color: var(--text-muted);
+    margin: 0;
+  }
+  .local-hubcard__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: var(--space-4);
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    color: var(--primary);
+  }
+  .local-aside {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+  }
+  .local-aside__title {
+    font-size: var(--text-base);
+    font-family: var(--font-sans);
+    font-weight: var(--fw-semibold);
+    margin: 0 0 var(--space-4);
+  }
+  .local-facts {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+  .local-facts div {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-4);
+    font-size: var(--text-sm);
+  }
+  .local-facts dt {
+    color: var(--text-muted);
+  }
+  .local-facts dd {
+    margin: 0;
+    font-weight: var(--fw-medium);
+    color: var(--text-strong);
+    text-align: right;
+  }
+  .local-siblings {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .local-siblings a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--text-sm);
+    color: var(--text-body);
+  }
+  .local-siblings a:hover {
+    color: var(--text-strong);
+  }
+  .local-grid :global(.local-related) {
+    border-left: 3px solid var(--accent);
+  }
+  .local-related__body {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: var(--leading-relaxed);
+    color: var(--text-muted);
+  }
+  .local-related__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: var(--space-4);
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    color: var(--primary);
+  }
+  /* keep in sync with --container-md in global.css */
+  @media (max-width: 880px) {
+    .local-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

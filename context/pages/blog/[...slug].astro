@@ -1,0 +1,230 @@
+---
+import { render } from "astro:content";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Breadcrumbs from "@/components/Breadcrumbs.astro";
+import LeadForm from "@/components/LeadForm.astro";
+import CtaSection from "@/components/CtaSection.astro";
+import Faq from "@/components/Faq.astro";
+import Icon from "@/components/Icon.astro";
+import { getPublishedPosts, formatDate, type Post } from "@/lib/blog";
+import { blogPosting, breadcrumbs, faqPage } from "@/lib/schema";
+import { url } from "@/lib/url";
+import { site } from "@/data/site";
+
+export async function getStaticPaths() {
+  const posts = await getPublishedPosts();
+  return posts.map((post) => ({ params: { slug: post.id }, props: { post } }));
+}
+interface Props {
+  post: Post;
+}
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+const crumbs: [string, string][] = [
+  ["Home", "/"],
+  ["Blog", "/blog"],
+  [post.data.title, `/blog/${post.id}`],
+];
+
+const SITE_URL = "https://www.packetflow.be";
+const canonical = `${SITE_URL}/blog/${post.id}`;
+const jsonLd = [
+  blogPosting({
+    title: post.data.title,
+    description: post.data.description,
+    url: canonical,
+    datePublished: post.data.pubDate.toISOString(),
+    dateModified: (post.data.updatedDate ?? post.data.pubDate).toISOString(),
+    author: post.data.author,
+    // The owner has a bio at /over-mij; link author markup there. Guest authors
+    // (if ever added) fall back to name-only, which is still valid.
+    authorUrl:
+      post.data.author === site.owner ? `${SITE_URL}/over-mij` : undefined,
+    image: post.data.image ? `${SITE_URL}${post.data.image}` : undefined,
+  }),
+  breadcrumbs(crumbs),
+  ...(post.data.faqs && post.data.faqs.length > 0
+    ? [faqPage(post.data.faqs)]
+    : []),
+];
+
+const updated =
+  post.data.updatedDate &&
+  post.data.updatedDate.getTime() !== post.data.pubDate.getTime();
+---
+
+<BaseLayout
+  title={post.data.title}
+  description={post.data.description}
+  jsonLd={jsonLd}
+  image={post.data.image}
+>
+  <article>
+    <section class="page-hero">
+      <div class="container page-hero__in">
+        <Breadcrumbs items={crumbs} />
+        {post.data.tags.length > 0 && (
+          <div class="post-tags">
+            {post.data.tags.map((tag) => <span class="post-tag">{tag}</span>)}
+          </div>
+        )}
+        <h1>{post.data.title}</h1>
+        <p class="lead page-hero__lead">{post.data.description}</p>
+        <p class="post-byline">
+          <Icon name="user" size={15} /> {post.data.author}
+          <span class="post-byline__sep">·</span>
+          <time datetime={post.data.pubDate.toISOString()}>
+            {formatDate(post.data.pubDate)}
+          </time>
+          {updated && (
+            <>
+              <span class="post-byline__sep">·</span>
+              <span>bijgewerkt {formatDate(post.data.updatedDate!)}</span>
+            </>
+          )}
+        </p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="prose post-body">
+          <Content />
+        </div>
+        <p class="post-back">
+          <a href={url("/blog")}><Icon name="arrow-left" size={15} /> Terug naar alle artikels</a>
+        </p>
+      </div>
+    </section>
+
+    {post.data.faqs && post.data.faqs.length > 0 && (
+      <Faq items={post.data.faqs} />
+    )}
+
+    {
+      post.data.leadForm && (
+        <LeadForm
+          source={post.id}
+          campaign={post.data.leadCampaign ?? post.id}
+        />
+      )
+    }
+  </article>
+
+  {!post.data.leadForm && <CtaSection />}
+</BaseLayout>
+
+<style>
+  .post-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: var(--space-3);
+  }
+  .post-tag {
+    font-family: var(--font-sans);
+    font-size: var(--text-2xs);
+    font-weight: var(--fw-semibold);
+    letter-spacing: var(--tracking-kicker);
+    text-transform: uppercase;
+    color: var(--orange-600);
+  }
+  .post-byline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: var(--space-5);
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+  }
+  .post-byline__sep {
+    color: var(--grey-400);
+  }
+
+  /* Article body — Markdown renders raw elements, so style them here. */
+  .post-body {
+    max-width: 72ch;
+  }
+  .post-body :global(h2) {
+    font-size: var(--text-xl);
+    margin: var(--space-7) 0 var(--space-3);
+    scroll-margin-top: var(--space-7);
+  }
+  .post-body :global(h3) {
+    font-size: var(--text-lg);
+    margin: var(--space-6) 0 var(--space-2);
+  }
+  .post-body :global(p) {
+    color: var(--text-body);
+    line-height: var(--leading-relaxed);
+    margin-bottom: var(--space-4);
+  }
+  .post-body :global(ul),
+  .post-body :global(ol) {
+    margin: 0 0 var(--space-4);
+    padding-left: 1.4em;
+    color: var(--text-body);
+    line-height: var(--leading-relaxed);
+  }
+  .post-body :global(li) {
+    margin-bottom: var(--space-2);
+  }
+  .post-body :global(a) {
+    color: var(--text-link);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .post-body :global(strong) {
+    color: var(--text-strong);
+    font-weight: var(--fw-semibold);
+  }
+  .post-body :global(blockquote) {
+    margin: var(--space-5) 0;
+    padding: var(--space-2) var(--space-5);
+    border-left: 3px solid var(--orange-400, var(--orange-500));
+    color: var(--text-muted);
+    font-style: italic;
+  }
+  .post-body :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin: var(--space-5) 0;
+    font-size: var(--text-sm);
+  }
+  .post-body :global(th),
+  .post-body :global(td) {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .post-body :global(th) {
+    color: var(--text-strong);
+    font-weight: var(--fw-semibold);
+  }
+  .post-body :global(hr) {
+    border: 0;
+    border-top: 1px solid var(--border-soft);
+    margin: var(--space-7) 0;
+  }
+  .post-body :global(code) {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.9em;
+    background: var(--surface-sunken);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm, 6px);
+  }
+  .post-back {
+    max-width: 72ch;
+    margin-top: var(--space-7);
+    font-size: var(--text-sm);
+  }
+  .post-back a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--primary);
+    font-weight: var(--fw-medium);
+  }
+</style>

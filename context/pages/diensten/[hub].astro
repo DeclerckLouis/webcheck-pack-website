@@ -1,0 +1,287 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import CtaSection from "@/components/CtaSection.astro";
+import Card from "@/components/Card.astro";
+import Badge from "@/components/Badge.astro";
+import Kicker from "@/components/Kicker.astro";
+import Icon from "@/components/Icon.astro";
+import Button from "@/components/Button.astro";
+import Breadcrumbs from "@/components/Breadcrumbs.astro";
+import { services, type ServiceHub } from "@/data/services";
+import { service, breadcrumbs } from "@/lib/schema";
+import { url } from "@/lib/url";
+
+export function getStaticPaths() {
+  return services.map((hub) => ({ params: { hub: hub.slug }, props: { hub } }));
+}
+interface Props {
+  hub: ServiceHub;
+}
+const { hub } = Astro.props;
+
+const crumbs: [string, string][] = [
+  ["Home", "/"],
+  ["Diensten", "/diensten"],
+  [hub.navTitle, `/diensten/${hub.slug}`],
+];
+
+const jsonLd = [
+  service({ name: hub.title, description: hub.description, serviceType: hub.title }),
+  breadcrumbs(crumbs),
+];
+---
+
+<BaseLayout title={hub.title} description={hub.metaDescription ?? hub.description} jsonLd={jsonLd}>
+  <section class="page-hero">
+    <div class="container page-hero__in">
+      <Breadcrumbs items={crumbs} />
+      <Badge tone="blue">{hub.audience}</Badge>
+      <h1>{hub.title}</h1>
+      <p class="lead page-hero__lead">{hub.tagline}</p>
+      <div class="page-hero__actions">
+        <Button href="/contact" variant="primary" iconRight="arrow-right">Vraag info aan</Button>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-head">
+        <Kicker>Wat ik voor u doe</Kicker>
+        <p>{hub.description}</p>
+      </div>
+      <div class="grid-cards">
+        {
+          hub.features.map((f) => (
+            <Card class="feature">
+              <span class="feature__icon"><Icon name={f.icon} size={20} /></span>
+              <h3>{f.title}</h3>
+              <p>{f.body}</p>
+            </Card>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  {
+    hub.locals.length > 0 && (
+      <section class="section locals-band">
+        <div class="container">
+          <div class="section-head">
+            <Kicker>In jouw regio</Kicker>
+            <h2>{hub.navTitle} dichtbij</h2>
+            <p>Lokale aanpak met een vast aanspreekpunt. Bekijk de pagina voor uw gemeente of regio.</p>
+          </div>
+          <div class="grid-cards">
+            {hub.locals.map((local) => (
+              <a href={url(`/${local.slug}`)} class="local-link">
+                <Card class="feature">
+                  <span class="feature__icon"><Icon name={local.icon} size={20} /></span>
+                  <h3>{local.title}</h3>
+                  <p>{local.intro}</p>
+                  <span class="local-link__more">Lees meer <Icon name="arrow-right" size={15} /></span>
+                </Card>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    hub.ladder && (
+      <section class="section ladder-band">
+        <div class="container">
+          <div class="section-head">
+            <Kicker>Twee niveaus</Kicker>
+            <h2>{hub.ladder.title}</h2>
+            {hub.ladder.intro && <p>{hub.ladder.intro}</p>}
+          </div>
+          <div class="ladder-grid">
+            {hub.ladder.tiers.map((t) => (
+              <Card class="ladder-tier">
+                <span class="ladder-tier__price">{t.price}</span>
+                <h3>{t.name}</h3>
+                <p>{t.body}</p>
+                {t.href && (
+                  <a href={url(t.href)} class="ladder-tier__more">
+                    Meer over dit pakket <Icon name="arrow-right" size={15} />
+                  </a>
+                )}
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    hub.reading && hub.reading.length > 0 && (
+      <section class="section reading-band">
+        <div class="container">
+          <div class="section-head">
+            <Kicker>Uit de kennisbank</Kicker>
+            <h2>Verder lezen</h2>
+          </div>
+          <div class="grid-cards">
+            {hub.reading.map((r) => (
+              <a href={url(r.href)} class="reading-link">
+                <Card class="feature">
+                  <span class="feature__icon"><Icon name="book-open" size={20} /></span>
+                  <h3>{r.title}</h3>
+                  <p>{r.body}</p>
+                  <span class="reading-link__more">Lees het artikel <Icon name="arrow-right" size={15} /></span>
+                </Card>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    hub.aftercare && (
+      <section class="aftercare">
+        <div class="container">
+          <p class="aftercare__line">
+            <span class="aftercare__icon"><Icon name="radar" size={18} /></span>
+            <span>{hub.aftercare}</span>
+          </p>
+        </div>
+      </section>
+    )
+  }
+
+  <CtaSection />
+</BaseLayout>
+
+<style>
+  .locals-band {
+    background: var(--paper);
+    border-top: 1px solid var(--border-soft);
+  }
+  .page-hero :global(.badge) {
+    margin-bottom: var(--space-4);
+  }
+  .local-link {
+    display: block;
+  }
+  .local-link :global(.card) {
+    transition:
+      border-color var(--dur-base) var(--ease-out),
+      box-shadow var(--dur-base) var(--ease-out);
+  }
+  .local-link:hover :global(.card) {
+    border-color: var(--orange-300);
+    box-shadow: var(--shadow-md);
+  }
+  .local-link__more {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    color: var(--primary);
+  }
+
+  /* Verder lezen — contextual links into the kennisbank */
+  .reading-band {
+    background: var(--paper);
+    border-top: 1px solid var(--border-soft);
+  }
+  .reading-link {
+    display: block;
+  }
+  .reading-link :global(.card) {
+    transition:
+      border-color var(--dur-base) var(--ease-out),
+      box-shadow var(--dur-base) var(--ease-out);
+  }
+  .reading-link:hover :global(.card) {
+    border-color: var(--orange-300);
+    box-shadow: var(--shadow-md);
+  }
+  .reading-link__more {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    color: var(--primary);
+  }
+
+  /* Pricing ladder — keeps the two levels visibly distinct */
+  .ladder-band {
+    background: var(--paper);
+    border-top: 1px solid var(--border-soft);
+  }
+  .ladder-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-5);
+  }
+  .ladder-tier {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  .ladder-tier__price {
+    font-family: var(--font-display);
+    font-weight: var(--fw-semibold);
+    font-size: var(--text-lg);
+    color: var(--text-strong);
+    letter-spacing: -0.01em;
+  }
+  .ladder-tier h3 {
+    font-size: var(--text-md);
+    margin: 0;
+  }
+  .ladder-tier p {
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    color: var(--text-muted);
+    margin: 0;
+  }
+  .ladder-tier__more {
+    margin-top: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    color: var(--primary);
+    padding-top: var(--space-2);
+  }
+
+  /* Post-oplevering line — understated, reads as a project-attach */
+  .aftercare {
+    padding-block: var(--space-6);
+  }
+  .aftercare__line {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    padding: var(--space-4) var(--space-5);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-md);
+    background: var(--paper);
+    font-size: var(--text-sm);
+    color: var(--text-strong);
+  }
+  .aftercare__icon {
+    flex: none;
+    color: var(--primary);
+    display: inline-flex;
+  }
+  /* keep in sync with --container-md in global.css */
+  @media (max-width: 880px) {
+    .ladder-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

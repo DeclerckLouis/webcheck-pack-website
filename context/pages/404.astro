@@ -1,0 +1,46 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Button from "@/components/Button.astro";
+import Kicker from "@/components/Kicker.astro";
+---
+
+<BaseLayout title="Pagina niet gevonden" description="Deze pagina bestaat niet of is verplaatst.">
+  <section class="section notfound">
+    <div class="container">
+      <Kicker>404</Kicker>
+      <h1 class="notfound__title">Deze pagina bestaat niet (meer)</h1>
+      <p class="lead notfound__lead">
+        Misschien is ze verplaatst sinds de vernieuwing van de website. Ga terug
+        naar de homepage of bekijk mijn diensten.
+      </p>
+      <div class="notfound__actions">
+        <Button href="/" variant="primary" iconRight="arrow-right">Naar de homepage</Button>
+        <Button href="/diensten" variant="secondary">Bekijk diensten</Button>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .notfound {
+    text-align: center;
+  }
+  .notfound :global(.kicker) {
+    justify-content: center;
+  }
+  .notfound__title {
+    font-size: var(--text-2xl);
+    margin: var(--space-3) 0 var(--space-4);
+  }
+  .notfound__lead {
+    max-width: 46ch;
+    margin: 0 auto;
+  }
+  .notfound__actions {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-top: var(--space-6);
+  }
+</style>

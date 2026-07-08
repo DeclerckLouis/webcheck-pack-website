@@ -1,0 +1,32 @@
+---
+// Visual breadcrumb trail. Takes the same [label, path] pairs as the
+// `breadcrumbs()` JSON-LD helper in lib/schema, so a page can build the array
+// once and feed it to both — keeping the visible trail and structured data in
+// sync. The last item is rendered as the current page (no link).
+import { url } from "@/lib/url";
+
+interface Props {
+  items: [string, string][];
+  /** Extra classes for layout tweaks per page. */
+  class?: string;
+}
+const { items, class: className } = Astro.props;
+---
+
+<nav class:list={["crumbs", className]} aria-label="Kruimelpad">
+  {
+    items.map(([label, href], i) => {
+      const isLast = i === items.length - 1;
+      return (
+        <>
+          {i > 0 && <span class="crumbs__sep" aria-hidden="true">/</span>}
+          {isLast ? (
+            <span aria-current="page">{label}</span>
+          ) : (
+            <a href={url(href)}>{label}</a>
+          )}
+        </>
+      );
+    })
+  }
+</nav>

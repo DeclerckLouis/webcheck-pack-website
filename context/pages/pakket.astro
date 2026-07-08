@@ -1,0 +1,268 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import CtaSection from "@/components/CtaSection.astro";
+import Card from "@/components/Card.astro";
+import Badge from "@/components/Badge.astro";
+import Kicker from "@/components/Kicker.astro";
+import Icon from "@/components/Icon.astro";
+import Button from "@/components/Button.astro";
+import Breadcrumbs from "@/components/Breadcrumbs.astro";
+import Reviews from "@/components/Reviews.astro";
+import Faq from "@/components/Faq.astro";
+import { site } from "@/data/site";
+import { service, breadcrumbs, faqPage } from "@/lib/schema";
+
+// PRICING: an entry "vanaf" price — the package is scoped per kantoor, so the
+// closing CTA ("op maat van uw team") and this headline stay consistent.
+const price = "vanaf €99";
+const priceUnit = "/ maand";
+
+const includes = [
+  ["mail", "Microsoft 365", "E-mail, agenda, Teams en licenties — opgezet, beveiligd en onderhouden."],
+  ["database", "Veilige back-up", "Uw dossiers automatisch en versleuteld bewaard. Getest, niet gehoopt."],
+  ["file-check", "Peppol e-facturatie", "Klaar voor de verplichte e-facturatie, gekoppeld aan uw boekhouding."],
+  ["shield-check", "Cybersecurity & MFA", "Detecteert wanneer iemand uw Microsoft-account probeert over te nemen. Bescherming tegen phishing en ransomware."],
+  ["radar", "Proactieve monitoring", "Ik bewaak uw systemen en grijp in vóór er iets stilvalt."],
+  ["life-buoy", "Support & interventies", "Twee interventies per maand inbegrepen, plus een vast aanspreekpunt, bereikbaar 's avonds en in het weekend."],
+];
+
+const crumbs: [string, string][] = [
+  ["Home", "/"],
+  ["KMO-Pakket", "/pakket"],
+];
+
+// Visible FAQ + FAQPage schema. Covers the questions people actually ask before
+// they reach out: prijs, opzegbaarheid en GDPR.
+const faqs = [
+  {
+    question: "Wat kost het KMO-Pakket?",
+    answer:
+      "Het pakket start vanaf €99 per maand voor een solo- of duokantoor en wordt samengesteld op maat van uw team. Twee interventies per maand zitten in de prijs; extra werk daarboven reken ik aan €60/uur (excl. btw). Microsoft 365-licenties staan apart en transparant op de factuur, aan de normale Microsoft-prijs. U krijgt vooraf een heldere, vaste maandprijs, geen uurtje-factuurtje en geen verrassingen.",
+  },
+  {
+    question: "Kan ik maandelijks opzeggen?",
+    answer:
+      "Ja. Het pakket is maandelijks opzegbaar, zonder langlopend contract. Zo blijft u flexibel en betaalt u alleen zolang u tevreden bent.",
+  },
+  {
+    question: "Blijven mijn gegevens in regel met de GDPR?",
+    answer:
+      "Ja. Toegang en backup worden zo ingericht dat uw gegevens privé en in regel met de GDPR blijven. Ik leg vast wie bij welke data kan en zorg voor versleutelde, geteste back-ups.",
+  },
+  {
+    question: "Zijn de Microsoft 365-licenties inbegrepen in de prijs?",
+    answer:
+      "De licenties reken ik apart aan, aan de normale Microsoft-prijs en als aparte lijn op uw factuur. Zo ziet u exact wat de licentie kost. Het opzetten, beveiligen en onderhouden ervan zit wél in het pakket.",
+  },
+  {
+    question: "Werk ik met een groter team?",
+    answer:
+      "Het pakket is op zijn best voor solo- en duokantoren en kleine praktijken. Heeft u een groter team, dan stel ik liever een aanpak per gebruiker samen die met u meegroeit. Bespreek het gerust.",
+  },
+  {
+    question: "Hoe snel ben ik geholpen bij een probleem?",
+    answer:
+      "U heeft één vast aanspreekpunt, bereikbaar 's avonds en in het weekend. Ik bewaak uw systemen proactief en grijp vaak in vóór u er iets van merkt.",
+  },
+];
+
+const jsonLd = [
+  service({
+    name: "KMO-Pakket",
+    description:
+      "Volledige IT-ontzorging voor kleine kantoren: Microsoft 365, backup, Peppol en cybersecurity aan een vaste maandprijs.",
+    serviceType: "Managed IT-pakket",
+  }),
+  breadcrumbs(crumbs),
+  faqPage(faqs),
+];
+---
+
+<BaseLayout
+  title="KMO-Pakket — IT-ontzorging, vaste maandprijs"
+  description="Het KMO-Pakket bundelt Microsoft 365, backup, Peppol en cybersecurity in één vaste maandprijs. Volledige ontzorging voor uw kantoor, scherp geprijsd."
+  jsonLd={jsonLd}
+>
+  <section class="page-hero">
+    <div class="container page-hero__in pakket-hero">
+      <div>
+        <Breadcrumbs items={crumbs} />
+        <Kicker>Het KMO-Pakket</Kicker>
+        <h1>Volledige ontzorging aan één vaste prijs</h1>
+        <p class="lead page-hero__lead">
+          Alles wat een solo- of duokantoor nodig heeft om veilig en in regel te
+          werken, gebundeld in één pakket. Geen uurtje-factuurtje, geen
+          verrassingen. Eén partner, één vaste prijs.
+        </p>
+        <div class="page-hero__actions">
+          <Button href="/contact" variant="primary" iconRight="arrow-right">Vraag uw offerte</Button>
+        </div>
+      </div>
+
+      <Card raised class="price-card">
+        <Badge tone="orange" dot>Meest gekozen</Badge>
+        <div class="price">
+          <span class="price__amount">{price}</span>
+          <span class="price__unit">{priceUnit}</span>
+        </div>
+        <p class="price__note">
+          Voor een solo- of duokantoor, op maat van uw team. Maandelijks
+          opzegbaar.
+        </p>
+        <ul class="checklist price__list">
+          {
+            ["Microsoft 365 & e-mail", "Back-up van uw dossiers", "Peppol e-facturatie", "Beveiliging & monitoring", "Twee interventies per maand", "Support buiten de uren"].map((i) => (
+              <li>
+                <span class="check"><Icon name="check" size={14} /></span>
+                <span>{i}</span>
+              </li>
+            ))
+          }
+        </ul>
+        <Button href="/contact" variant="primary" size="lg" fullWidth iconRight="arrow-right">
+          Start vrijblijvend
+        </Button>
+      </Card>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-head">
+        <Kicker>Wat zit erin?</Kicker>
+        <h2>Alles centraal beheerd, zonder kopzorgen</h2>
+      </div>
+      <div class="pakket-grid">
+        {
+          includes.map(([icon, title, body]) => (
+            <Card class="feature">
+              <span class="feature__icon"><Icon name={icon} size={20} /></span>
+              <h3>{title}</h3>
+              <p>{body}</p>
+            </Card>
+          ))
+        }
+      </div>
+      <p class="pakket-note">
+        Microsoft 365-licenties staan apart en transparant op de factuur, aan de
+        normale Microsoft-prijs. Verplaatsing is inbegrepen in zone 1 en 2, zie
+        de <a href="/tarieven">tarieven</a>. Twijfelt u tussen een lokale partner
+        en een groot IT-bedrijf? Lees de
+        <a href="/lokale-it-partner-vs-groot-it-bedrijf">eerlijke vergelijking</a>
+        of bekijk <a href="/blog/wat-kost-it-beheer-kleine-onderneming">wat IT-beheer kost voor een kleine onderneming</a>.
+      </p>
+    </div>
+  </section>
+
+  <section class="section pakket-why">
+    <div class="container">
+      <div class="section-head">
+        <Kicker>Waarom het pakket</Kicker>
+        <h2>Eén partner, geen verrassingen</h2>
+      </div>
+      <div class="grid-3-plain">
+      {
+        [
+          ["Voorspelbaar", "Eén vaste prijs. U weet exact waar u aan toe bent, elke maand."],
+          ["Compleet", "Beheer, beveiliging, backup en support — alles onder één dak."],
+          ["Lokaal", `Eén vast aanspreekpunt in ${site.serviceArea} dat uw zaak echt kent.`],
+        ].map(([k, v]) => (
+          <div>
+            <h3 class="pakket-why__k">{k}</h3>
+            <p class="pakket-why__v">{v}</p>
+          </div>
+        ))
+      }
+      </div>
+    </div>
+  </section>
+
+  <Reviews />
+
+  <Faq items={faqs} />
+
+  <CtaSection
+    title="Benieuwd wat het pakket voor uw kantoor kost?"
+    body="Ik stel een pakket samen op maat van uw team en bezorg u een heldere prijs — vrijblijvend."
+  />
+</BaseLayout>
+
+<style>
+  .pakket-hero {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: var(--space-7);
+    align-items: center;
+  }
+  .price-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+  .price {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .price__amount {
+    font-family: var(--font-display);
+    font-weight: var(--fw-semibold);
+    font-size: var(--text-3xl);
+    color: var(--text-strong);
+    letter-spacing: -0.02em;
+  }
+  .price__unit {
+    font-size: var(--text-md);
+    color: var(--text-muted);
+  }
+  .price__note {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    margin: 0;
+  }
+  .pakket-note {
+    margin-top: var(--space-5);
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    text-align: center;
+    max-width: 60ch;
+    margin-inline: auto;
+  }
+  .pakket-note a {
+    color: var(--text-link);
+    text-decoration: underline;
+  }
+  .price__list {
+    margin: var(--space-2) 0;
+  }
+  .pakket-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-5);
+  }
+  .pakket-why {
+    background: var(--paper);
+    border-block: 1px solid var(--border-soft);
+  }
+  .grid-3-plain {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-6);
+  }
+  .pakket-why__k {
+    font-size: var(--text-lg);
+  }
+  .pakket-why__v {
+    margin-top: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+  }
+  /* keep in sync with --container-md in global.css */
+  @media (max-width: 880px) {
+    .pakket-hero,
+    .pakket-grid,
+    .grid-3-plain {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

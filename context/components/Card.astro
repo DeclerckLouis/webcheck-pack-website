@@ -1,0 +1,58 @@
+---
+// Packetflow Card — warm paper surface with soft lift.
+// `accent` adds a 3px orange top rule; `raised` uses white + a stronger shadow.
+interface Props {
+  accent?: boolean;
+  raised?: boolean;
+  padded?: boolean;
+  class?: string;
+}
+const { accent = false, raised = false, padded = true, class: className } = Astro.props;
+---
+
+<div
+  class:list={[
+    "card",
+    raised && "card--raised",
+    padded && "card--padded",
+    accent && "card--accent",
+    className,
+  ]}
+>
+  <slot />
+</div>
+
+<style>
+  .card {
+    position: relative;
+    background: var(--surface-card);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition:
+      box-shadow var(--dur-base) var(--ease-out),
+      border-color var(--dur-base) var(--ease-out);
+  }
+  .card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-strong);
+  }
+  .card--raised {
+    background: var(--surface-raised);
+    box-shadow: var(--shadow-md);
+  }
+  .card--raised:hover {
+    box-shadow: var(--shadow-lg);
+  }
+  .card--padded {
+    padding: var(--space-6);
+  }
+  .card--accent::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: var(--accent);
+  }
+</style>

@@ -1,0 +1,79 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Kicker from "@/components/Kicker.astro";
+import Breadcrumbs from "@/components/Breadcrumbs.astro";
+import { site } from "@/data/site";
+import { breadcrumbs } from "@/lib/schema";
+
+const crumbs: [string, string][] = [
+  ["Home", "/"],
+  ["Privacybeleid", "/privacy"],
+];
+const jsonLd = breadcrumbs(crumbs);
+---
+
+<BaseLayout title="Privacybeleid" description={`Privacybeleid van ${site.legalName}.`} jsonLd={jsonLd}>
+  <section class="section">
+    <div class="container privacy">
+      <Breadcrumbs items={crumbs} />
+      <Kicker>Juridisch</Kicker>
+      <h1 class="privacy__title">Privacybeleid</h1>
+      <div class="prose">
+        <h2>Wie is verantwoordelijk voor uw gegevens?</h2>
+        <p>
+          Deze website en dienstverlening worden uitgebaat door:
+        </p>
+        <ul>
+          <li><strong>{site.legalName}</strong> — {site.owner}</li>
+          <li>{site.address.street}, {site.address.postalCode} {site.address.city}, {site.address.country}</li>
+          <li>Ondernemingsnummer (KBO): {site.vatId}</li>
+          <li>E-mail: <a href={`mailto:${site.email}`}>{site.email}</a></li>
+          <li>Telefoon: <a href={site.phoneHref}>{site.phone}</a></li>
+        </ul>
+
+        <h2>Welke gegevens verzamel ik?</h2>
+        <p>
+          Wanneer u het contactformulier gebruikt of mij mailt of belt, verwerk
+          ik de gegevens die u zelf doorgeeft — zoals uw naam, bedrijfsnaam,
+          e-mailadres, telefoonnummer en de inhoud van uw bericht. Ik gebruik
+          deze gegevens enkel om uw vraag te beantwoorden en om u een offerte of
+          dienstverlening te bezorgen.
+        </p>
+
+        <h2>Hoe lang bewaar ik ze?</h2>
+        <p>
+          Ik bewaar uw gegevens niet langer dan nodig voor het doel waarvoor ze
+          verzameld werden, of zo lang als wettelijk vereist is (bijvoorbeeld
+          voor boekhoudkundige verplichtingen).
+        </p>
+
+        <h2>Met wie deel ik ze?</h2>
+        <p>
+          Ik verkoop uw gegevens niet. Ze worden enkel gedeeld met
+          dienstverleners die nodig zijn om u te helpen (zoals Microsoft 365 voor
+          e-mail), en telkens in regel met de GDPR/AVG.
+        </p>
+
+        <h2>Uw rechten</h2>
+        <p>
+          U heeft het recht om uw gegevens in te kijken, te laten verbeteren of
+          te laten verwijderen, en om bezwaar te maken tegen de verwerking ervan.
+          Heeft u een vraag over uw gegevens? Mail naar
+          <a href={`mailto:${site.email}`}>{site.email}</a> of bel
+          <a href={site.phoneHref}>{site.phone}</a>. U kan ook klacht indienen bij
+          de Gegevensbeschermingsautoriteit (gegevensbeschermingsautoriteit.be).
+        </p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .privacy {
+    max-width: var(--container-md);
+  }
+  .privacy__title {
+    font-size: var(--text-2xl);
+    margin: var(--space-3) 0 var(--space-5);
+  }
+</style>

@@ -1,0 +1,100 @@
+---
+// Visible FAQ section. Pairs with `faqPage()` in lib/schema.ts: render this so
+// the questions are actually on the page (Google requires FAQ rich-result
+// content to be visible), and pass the same items to faqPage() for the JSON-LD.
+// Uses native <details>/<summary> — accessible and no JS.
+import Kicker from "./Kicker.astro";
+
+export type FaqItem = { question: string; answer: string };
+interface Props {
+  items: FaqItem[];
+  title?: string;
+  kicker?: string;
+}
+const { items, title = "Veelgestelde vragen", kicker = "FAQ" } = Astro.props;
+---
+
+{
+  items.length > 0 && (
+    <section class="section faq">
+      <div class="container">
+        <div class="section-head">
+          <Kicker>{kicker}</Kicker>
+          <h2>{title}</h2>
+        </div>
+        <ul class="faq__list">
+          {items.map((qa) => (
+            <li class="faq__item">
+              <details class="faq__details">
+                <summary class="faq__q">
+                  <span>{qa.question}</span>
+                </summary>
+                <p class="faq__a">{qa.answer}</p>
+              </details>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}
+
+<style>
+  .faq {
+    background: var(--paper);
+    border-block: 1px solid var(--border-soft);
+  }
+  .faq__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-width: 72ch;
+  }
+  .faq__item {
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .faq__item:first-child {
+    border-top: 1px solid var(--border-soft);
+  }
+  .faq__details {
+    padding: 0;
+  }
+  .faq__q {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: var(--space-4) 0;
+    cursor: pointer;
+    list-style: none;
+    font-family: var(--font-sans);
+    font-weight: var(--fw-semibold);
+    font-size: var(--text-md);
+    color: var(--text-strong);
+  }
+  .faq__q::-webkit-details-marker {
+    display: none;
+  }
+  /* Chevron built from a rotating caret on the summary. */
+  .faq__q::after {
+    content: "";
+    flex: none;
+    width: 10px;
+    height: 10px;
+    border-right: 2px solid var(--text-muted);
+    border-bottom: 2px solid var(--text-muted);
+    transform: rotate(45deg);
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+  .faq__details[open] .faq__q::after {
+    transform: rotate(-135deg);
+  }
+  .faq__a {
+    margin: 0;
+    padding: 0 0 var(--space-5);
+    max-width: 64ch;
+    font-size: var(--text-sm);
+    line-height: var(--leading-relaxed);
+    color: var(--text-muted);
+  }
+</style>

@@ -1,0 +1,303 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Card from "@/components/Card.astro";
+import Kicker from "@/components/Kicker.astro";
+import Icon from "@/components/Icon.astro";
+import Button from "@/components/Button.astro";
+import Breadcrumbs from "@/components/Breadcrumbs.astro";
+import { site } from "@/data/site";
+import { breadcrumbs } from "@/lib/schema";
+
+const crumbs: [string, string][] = [
+  ["Home", "/"],
+  ["Contact", "/contact"],
+];
+const jsonLd = breadcrumbs(crumbs);
+
+const contactItems = [
+  ["phone", site.phone, site.phoneHref],
+  ["mail", site.email, `mailto:${site.email}`],
+  ["map-pin", `${site.address.city}, ${site.address.region}`, null],
+];
+
+// Odoo website_form endpoint — POSTing here creates a crm.lead (opportunity).
+const odooEndpoint = `${site.odooBaseUrl}/website/form/crm.lead`;
+---
+
+<BaseLayout
+  title="Contact — vrijblijvend kennismaken"
+  description={`Neem contact op met ${site.name}. Bel ${site.phone}, mail ${site.email} of laat een bericht achter. Ik antwoord binnen één werkdag.`}
+  jsonLd={jsonLd}
+>
+  <section class="section contact">
+    <div class="container contact__grid">
+      <div>
+        <Breadcrumbs items={crumbs} />
+        <Kicker>Vrijblijvend kennismaken</Kicker>
+        <h1 class="contact__title">30 minuten, kosteloos — bij u of via telefoon</h1>
+        <p class="lead contact__lead">
+          Vertel kort waar het schoentje knelt. Ik antwoord binnen één werkdag —
+          vaak sneller. Geen verkooppraat, gewoon een eerlijk gesprek.
+        </p>
+        <div class="contact__list">
+          {
+            contactItems.map(([icon, text, href]) => (
+              <div class="contact__item">
+                <span class="contact__icon"><Icon name={icon} size={18} color="var(--blue-700)" /></span>
+                {href ? <a href={href}>{text}</a> : <span>{text}</span>}
+              </div>
+            ))
+          }
+        </div>
+        <p class="contact__avail">
+          <Icon name="clock" size={15} /> Beschikbaar 's avonds en in het weekend.
+        </p>
+        <p class="contact__avail">
+          <Icon name="map-pin" size={15} /> Werk ik bij u ter plaatse? Bekijk de
+          <a href="/tarieven#verplaatsingskosten">verplaatsingskosten</a>.
+        </p>
+      </div>
+
+      <Card raised>
+        <form id="contact-form" class="contact-form" novalidate>
+          <label>
+            <span class="contact-form__label">Naam</span>
+            <input type="text" name="contact_name" placeholder="Uw naam" required />
+          </label>
+          <label>
+            <span class="contact-form__label">E-mail</span>
+            <input type="email" name="email_from" placeholder="u@kantoor.be" required />
+          </label>
+          <label>
+            <span class="contact-form__label">Telefoon <span class="contact-form__opt">(optioneel)</span></span>
+            <input type="tel" name="phone" placeholder="0470 12 34 56" />
+          </label>
+          <label>
+            <span class="contact-form__label">Bedrijf / kantoor <span class="contact-form__opt">(optioneel)</span></span>
+            <input type="text" name="partner_name" placeholder="Naam van uw zaak of kantoor" />
+          </label>
+          <label>
+            <span class="contact-form__label">Waarmee kan ik helpen?</span>
+            <textarea name="description" rows="4" placeholder="Vertel kort over uw situatie…" required></textarea>
+          </label>
+
+          {/* Honeypot — bots fill this, humans never see it. */}
+          <div class="contact-form__hp" aria-hidden="true">
+            <label>Laat dit veld leeg<input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+          </div>
+
+          <div id="contact-error" class="form-msg" hidden role="alert">
+            Er ging iets mis bij het versturen. Mail me gerust rechtstreeks op
+            <a href={`mailto:${site.email}`}>{site.email}</a>.
+          </div>
+
+          <Button type="submit" variant="primary" size="lg" fullWidth iconRight="send">
+            Verstuur aanvraag
+          </Button>
+        </form>
+
+        <div id="contact-success" class="form-success" hidden>
+          <span class="form-success__icon"><Icon name="check" size={28} color="var(--success)" /></span>
+          <h2 class="form-success__title">Bedankt — tot binnenkort!</h2>
+          <p class="form-success__body">Ik neem binnen één werkdag contact met u op.</p>
+        </div>
+      </Card>
+    </div>
+  </section>
+</BaseLayout>
+
+<script define:vars={{ endpoint: odooEndpoint, fallbackEmail: site.email }}>
+  const form = document.getElementById("contact-form");
+  const errorEl = document.getElementById("contact-error");
+  const successEl = document.getElementById("contact-success");
+
+  if (form) {
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!form.reportValidity()) return;
+
+      // Honeypot: if filled, silently pretend success (it's a bot).
+      const honey = form.querySelector('input[name="website"]');
+      if (honey && honey.value) {
+        form.hidden = true;
+        successEl.hidden = false;
+        return;
+      }
+
+      const submitBtn = form.querySelector('button[type="submit"]');
+      errorEl.hidden = true;
+      if (submitBtn) submitBtn.disabled = true;
+
+      const data = new FormData(form);
+      data.delete("website"); // drop honeypot
+      // Odoo crm.lead requires a title (`name`).
+      const naam = (data.get("contact_name") || "").toString().trim() || "onbekend";
+      data.set("name", `Website-aanvraag — ${naam}`);
+
+      try {
+        // Odoo Online (SaaS) can't add CORS headers, so we send a CORS
+        // "simple request" in no-cors mode: the multipart POST still reaches
+        // Odoo and creates the crm.lead, but the response is opaque (we can't
+        // read the {id}). We optimistically show success; only a real network
+        // failure (offline/DNS) rejects and triggers the mailto fallback.
+        // (On Odoo.sh/self-hosted you can install packetflow_form_cors and
+        // switch to a normal fetch to verify the response — see odoo/ in repo.)
+        await fetch(endpoint, { method: "POST", mode: "no-cors", body: data });
+        form.hidden = true;
+        successEl.hidden = false;
+      } catch (err) {
+        console.error("Contactformulier versturen mislukt:", err);
+        if (submitBtn) submitBtn.disabled = false;
+        errorEl.hidden = false;
+      }
+    });
+  }
+</script>
+
+<style>
+  .contact__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-7);
+    align-items: center;
+  }
+  .contact__title {
+    font-size: var(--text-2xl);
+    margin: var(--space-3) 0 var(--space-4);
+  }
+  .contact__lead {
+    max-width: 44ch;
+  }
+  .contact__list {
+    margin-top: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .contact__item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: var(--text-base);
+    font-weight: var(--fw-medium);
+    color: var(--text-strong);
+  }
+  .contact__icon {
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-md);
+    background: var(--blue-50);
+    display: grid;
+    place-content: center;
+    flex: none;
+  }
+  .contact__avail {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: var(--space-4);
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+  }
+  .contact__avail a {
+    color: var(--text-link);
+    text-decoration: underline;
+  }
+
+  .contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+  .contact-form label {
+    display: block;
+  }
+  .contact-form__label {
+    display: block;
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    color: var(--text-strong);
+    margin-bottom: 6px;
+  }
+  .contact-form__opt {
+    color: var(--text-faint);
+    font-weight: var(--fw-regular);
+  }
+  .contact-form input,
+  .contact-form textarea {
+    width: 100%;
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    color: var(--text-strong);
+    background: var(--white);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    padding: 11px 14px;
+    transition: border-color var(--dur-fast) var(--ease-out);
+  }
+  .contact-form input::placeholder,
+  .contact-form textarea::placeholder {
+    color: var(--grey-400);
+  }
+  .contact-form input:focus,
+  .contact-form textarea:focus {
+    outline: none;
+    border-color: var(--orange-500);
+    box-shadow: 0 0 0 3px var(--focus-ring);
+  }
+  .contact-form textarea {
+    resize: vertical;
+  }
+  /* Honeypot — visually and from a11y tree hidden, still in the DOM for bots. */
+  .contact-form__hp {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  .form-msg {
+    font-size: var(--text-sm);
+    color: var(--danger);
+    background: var(--danger-soft);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+  }
+  .form-msg a {
+    color: var(--danger);
+    text-decoration: underline;
+  }
+
+  .form-success {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+    padding: var(--space-6) var(--space-2);
+  }
+  .form-success__icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--success-soft);
+    display: grid;
+    place-content: center;
+  }
+  .form-success__title {
+    font-size: var(--text-lg);
+    margin: 0;
+  }
+  .form-success__body {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  /* keep in sync with --container-md in global.css */
+  @media (max-width: 880px) {
+    .contact__grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

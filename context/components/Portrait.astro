@@ -1,0 +1,52 @@
+---
+// Photo with a graceful fallback: shows the image once the file exists in
+// public/images, otherwise falls back to a monogram tile. This lets us ship
+// the layout now and have the real photo appear the moment Louis drops the
+// file in (the old-site images are behind Odoo auth and can't be fetched here).
+// Size / shape (width, height, border-radius) are set by the caller via `class`.
+import { url } from "@/lib/url";
+interface Props {
+  src: string;
+  alt: string;
+  monogram?: string;
+  class?: string;
+}
+const { src, alt, monogram = "LD", class: className } = Astro.props;
+---
+
+<div class:list={["portrait", className]}>
+  <span class="portrait__ph" aria-hidden="true">{monogram}</span>
+  <img
+    src={url(src)}
+    alt={alt}
+    loading="lazy"
+    class="portrait__img"
+    onerror="this.style.display='none'"
+  />
+</div>
+
+<style>
+  .portrait {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(160deg, var(--blue-700), var(--blue-900));
+  }
+  .portrait__ph {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    color: var(--cream);
+    font-family: var(--font-display);
+    font-size: var(--portrait-mono, var(--text-3xl));
+    letter-spacing: 0.05em;
+  }
+  .portrait__img {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+</style>

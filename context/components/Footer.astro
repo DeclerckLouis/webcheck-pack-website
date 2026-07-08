@@ -1,0 +1,161 @@
+---
+import { site } from "@/data/site";
+import { services } from "@/data/services";
+import Logo from "./Logo.astro";
+import Icon from "./Icon.astro";
+import { url } from "@/lib/url";
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container site-footer__top">
+    <div class="site-footer__brand">
+      <a href={url("/")} aria-label="Packetflow — home">
+        <Logo variant="full" size={30} onDark tagline />
+      </a>
+      <p class="site-footer__lead">
+        Uw lokale IT-partner in {site.serviceArea}. Eén aanspreekpunt voor
+        medische praktijken en professionele kantoren in {site.serviceArea}.
+      </p>
+      <div class="site-footer__contact">
+        <a href={site.phoneHref}><Icon name="phone" size={16} /> {site.phone}</a>
+        <a href={`mailto:${site.email}`}><Icon name="mail" size={16} /> {site.email}</a>
+        <span><Icon name="map-pin" size={16} /> {site.address.postalCode} {site.address.city}, {site.address.region}</span>
+        <span><Icon name="building-2" size={16} /> KBO {site.vatId}</span>
+      </div>
+    </div>
+
+    {
+      services.map((hub) => (
+        <nav class="site-footer__col" aria-label={hub.navTitle}>
+          <h2 class="site-footer__heading">
+            <a href={url(`/diensten/${hub.slug}`)}>{hub.navTitle}</a>
+          </h2>
+          <ul>
+            {hub.locals.length === 0 ? (
+              <li>
+                <a href={url(`/diensten/${hub.slug}`)}>Meer info</a>
+              </li>
+            ) : (
+              hub.locals.map((local) => (
+                <li>
+                  <a href={url(`/${local.slug}`)}>{local.title}</a>
+                </li>
+              ))
+            )}
+          </ul>
+        </nav>
+      ))
+    }
+  </div>
+
+  <div class="site-footer__bar">
+    <div class="container site-footer__bar-in">
+      <span>{site.pillars} — © {year} {site.legalName}</span>
+      <nav aria-label="Juridisch">
+        <a href={url("/blog")}>Blog</a>
+        <a href={url("/over-mij")}>Over mij</a>
+        <a href={url("/lokale-it-partner-vs-groot-it-bedrijf")}>Lokaal vs. groot</a>
+        <a href={url("/tarieven")}>Tarieven</a>
+        <a href={url("/privacy")}>Privacy</a>
+        <a href={url("/contact")}>Contact</a>
+      </nav>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    margin-top: var(--space-10);
+    background: var(--ink);
+    color: var(--grey-300);
+  }
+  .site-footer__top {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr 1fr;
+    gap: var(--space-7);
+    padding-block: var(--space-8) var(--space-7);
+  }
+  .site-footer__lead {
+    margin-top: var(--space-4);
+    max-width: 30ch;
+    font-size: var(--text-sm);
+    line-height: var(--leading-relaxed);
+    color: var(--grey-400);
+  }
+  .site-footer__contact {
+    margin-top: var(--space-5);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .site-footer__contact a,
+  .site-footer__contact span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--text-sm);
+    color: var(--grey-300);
+  }
+  .site-footer__contact a:hover {
+    color: var(--cream);
+  }
+  .site-footer__heading {
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: var(--fw-semibold);
+    color: var(--cream);
+    margin: 0 0 var(--space-4);
+  }
+  .site-footer__heading a:hover {
+    color: var(--orange-300);
+  }
+  .site-footer__col ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .site-footer__col li a {
+    font-size: var(--text-sm);
+    color: var(--grey-400);
+  }
+  .site-footer__col li a:hover {
+    color: var(--cream);
+  }
+  .site-footer__bar {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .site-footer__bar-in {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    padding-block: var(--space-5);
+    font-size: var(--text-xs);
+    letter-spacing: 0.04em;
+    color: var(--grey-400);
+  }
+  .site-footer__bar-in nav {
+    display: flex;
+    gap: var(--space-5);
+  }
+  .site-footer__bar-in nav a:hover {
+    color: var(--cream);
+  }
+
+  /* keep in sync with --container-md in global.css */
+  @media (max-width: 880px) {
+    .site-footer__top {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  @media (max-width: 560px) {
+    .site-footer__top {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
