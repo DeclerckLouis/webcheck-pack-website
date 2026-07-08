@@ -1,0 +1,92 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "Domeinscan — controleer de gezondheid van uw domein | PacketFlow",
+  description =
+    "Gratis check van uw domein: SPF, DMARC, DKIM, DNSSEC, mail, blacklists en meer. Krijg in enkele seconden een score van 0 tot 100.",
+} = Astro.props;
+
+const base = import.meta.env.BASE_URL; // "/" on Cloudflare, "/<repo>/" on Pages staging
+const canonical = new URL(Astro.url.pathname, Astro.site).toString();
+const ogImage = new URL(`${base}images/og-image.png`, Astro.site).toString();
+---
+
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href={`${base}favicon.svg`} type="image/svg+xml" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Lora:ital,wght@1,500;1,600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="min-h-dvh flex flex-col" data-api-base={base}>
+    <a href="#main" class="skip-link">Naar de inhoud</a>
+
+    <header class="w-full">
+      <div class="mx-auto max-w-5xl px-5 py-5 flex items-center gap-3">
+        <svg viewBox="10 10 30 30" width="34" height="34" aria-hidden="true">
+          <path
+            d="M 10 10 L 10 40 L 25 40 L 25 25 C 25 16.7 31.7 10 40 10 L 10 10 Z"
+            fill="var(--color-brand)"
+          />
+          <path
+            d="M 40 40 L 25 40 L 25 25 C 25 33.3 31.7 40 40 40 Z"
+            fill="var(--color-accent)"
+          />
+        </svg>
+        <span class="font-semibold tracking-tight text-lg">PacketFlow</span>
+        <span class="text-[color:var(--color-muted)] text-sm hidden sm:inline"
+          >· Domeinscan</span
+        >
+      </div>
+    </header>
+
+    <main id="main" class="flex-1 w-full">
+      <slot />
+    </main>
+
+    <footer
+      class="w-full border-t border-[color:var(--color-line)] mt-16"
+    >
+      <div
+        class="mx-auto max-w-5xl px-5 py-8 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between text-sm text-[color:var(--color-muted)]"
+      >
+        <p>© {new Date().getFullYear()} PacketFlow — uw lokale IT-partner.</p>
+        <nav class="flex gap-4">
+          <a class="hover:text-[color:var(--color-brand)]" href="https://www.packetflow.be"
+            >Hoofdsite</a
+          >
+          <a
+            class="hover:text-[color:var(--color-brand)]"
+            href="https://www.packetflow.be/privacy">Privacy</a
+          >
+          <a
+            class="hover:text-[color:var(--color-brand)]"
+            href="https://www.packetflow.be/contact">Contact</a
+          >
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>

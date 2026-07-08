@@ -1,0 +1,176 @@
+---
+import Base from "../layouts/Base.astro";
+---
+
+<Base>
+  <section class="mx-auto max-w-3xl px-5 pt-10 sm:pt-16 text-center">
+    <p
+      class="inline-block text-sm font-medium text-[color:var(--color-accent-deep)] tracking-wide"
+    >
+      Gratis · resultaat in enkele seconden
+    </p>
+    <h1
+      class="mt-3 text-4xl sm:text-5xl font-semibold tracking-tight leading-[1.08]"
+    >
+      Hoe gezond is <span class="font-serif italic text-[color:var(--color-brand)]"
+        >uw domein</span
+      >?
+    </h1>
+    <p class="mt-4 text-lg text-[color:var(--color-muted)] max-w-xl mx-auto">
+      Controleer in één klik uw e-mailbeveiliging en DNS-hygiëne — SPF, DMARC,
+      DKIM, DNSSEC, blacklists en meer. U krijgt een duidelijke score van 0 tot 100.
+    </p>
+
+    <!-- Check form -->
+    <form id="scan-form" class="mt-8" novalidate>
+      <!--
+        Mode selector — v1 only offers "Algemeen", but the control is present so
+        the future "Beveiliging" scan (brief §6b) drops in without a re-layout.
+      -->
+      <div
+        class="flex justify-center gap-2 mb-3"
+        role="group"
+        aria-label="Type controle"
+      >
+        <span
+          class="text-sm px-3 py-1 rounded-full bg-[color:var(--color-brand)] text-white font-medium"
+          >Algemeen</span
+        >
+        <span
+          class="text-sm px-3 py-1 rounded-full border border-[color:var(--color-line)] text-[color:var(--color-muted)] opacity-60 cursor-not-allowed"
+          title="Binnenkort beschikbaar">Beveiliging · binnenkort</span
+        >
+      </div>
+
+      <div
+        class="flex flex-col sm:flex-row gap-2 max-w-xl mx-auto bg-white rounded-2xl p-2 shadow-sm border border-[color:var(--color-line)]"
+      >
+        <label for="domain-input" class="sr-only">Domein</label>
+        <input
+          id="domain-input"
+          name="domain"
+          type="text"
+          inputmode="url"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          placeholder="voorbeeld.be"
+          class="flex-1 px-4 py-3 rounded-xl bg-transparent outline-none text-lg"
+          required
+        />
+        <button
+          id="scan-submit"
+          type="submit"
+          class="px-6 py-3 rounded-xl bg-[color:var(--color-accent)] hover:bg-[color:var(--color-accent-deep)] text-white font-semibold transition-colors disabled:opacity-60"
+        >
+          Controleer
+        </button>
+      </div>
+      <p id="form-error" class="mt-2 text-sm text-[color:var(--color-score-red)] min-h-5" role="alert"></p>
+    </form>
+
+    <!-- Loading state -->
+    <div id="loading" class="hidden mt-10" aria-live="polite">
+      <div
+        class="inline-flex items-center gap-3 text-[color:var(--color-muted)]"
+      >
+        <span
+          class="w-5 h-5 rounded-full border-2 border-[color:var(--color-brand)] border-t-transparent animate-spin"
+          aria-hidden="true"></span>
+        <span>Bezig met controleren…</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Results (populated by app.ts) -->
+  <section
+    id="results"
+    class="hidden mx-auto max-w-3xl px-5 mt-10"
+    aria-live="polite"
+  >
+    <!-- Overall score -->
+    <div
+      class="bg-white rounded-2xl border border-[color:var(--color-line)] shadow-sm p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6"
+    >
+      <div class="shrink-0">
+        <svg id="score-ring" width="132" height="132" viewBox="0 0 132 132" aria-hidden="true">
+          <circle cx="66" cy="66" r="58" fill="none" stroke="var(--color-line)" stroke-width="12" />
+          <circle
+            id="score-arc"
+            cx="66"
+            cy="66"
+            r="58"
+            fill="none"
+            stroke-width="12"
+            stroke-linecap="round"
+            transform="rotate(-90 66 66)"
+          />
+        </svg>
+      </div>
+      <div class="text-center sm:text-left">
+        <p class="text-sm text-[color:var(--color-muted)]">Score voor</p>
+        <p id="result-domain" class="text-xl font-semibold tabular"></p>
+        <p id="result-headline" class="mt-1 text-[color:var(--color-muted)]"></p>
+        <p id="result-cached" class="mt-1 text-xs text-[color:var(--color-muted)] hidden"></p>
+      </div>
+    </div>
+
+    <!-- Per-category bars -->
+    <div id="categories" class="mt-4 grid gap-3"></div>
+
+    <!-- Email gate -->
+    <div
+      id="gate"
+      class="mt-6 bg-[color:var(--color-brand)] text-white rounded-2xl p-6 sm:p-8"
+    >
+      <!-- TODO(louis): definitieve wervende copy in eigen stem (brief §8.3) -->
+      <h2 class="text-xl font-semibold">Wilt u het volledige rapport?</h2>
+      <p class="mt-2 text-white/85">
+        Ontvang precies wat er misgaat én hoe u het oplost — in gewone taal,
+        zonder technisch jargon. <em>(Placeholder-tekst — aan te passen.)</em>
+      </p>
+      <form id="gate-form" class="mt-4 grid sm:grid-cols-2 gap-3" novalidate>
+        <input type="hidden" id="check-id" name="checkId" />
+        <div>
+          <label for="naam" class="sr-only">Naam</label>
+          <input id="naam" name="naam" type="text" placeholder="Naam *" required
+            class="w-full px-4 py-3 rounded-xl text-[color:var(--color-ink)] bg-white outline-none" />
+        </div>
+        <div>
+          <label for="email" class="sr-only">E-mail</label>
+          <input id="email" name="email" type="email" placeholder="E-mail *" required
+            class="w-full px-4 py-3 rounded-xl text-[color:var(--color-ink)] bg-white outline-none" />
+        </div>
+        <div>
+          <label for="bedrijf" class="sr-only">Bedrijf of kantoor</label>
+          <input id="bedrijf" name="bedrijf" type="text" placeholder="Bedrijf / kantoor"
+            class="w-full px-4 py-3 rounded-xl text-[color:var(--color-ink)] bg-white outline-none" />
+        </div>
+        <div>
+          <label for="telefoon" class="sr-only">Telefoon</label>
+          <input id="telefoon" name="telefoon" type="tel" placeholder="Telefoon"
+            class="w-full px-4 py-3 rounded-xl text-[color:var(--color-ink)] bg-white outline-none" />
+        </div>
+        <div class="sm:col-span-2 flex flex-col sm:flex-row items-center gap-3">
+          <button id="gate-submit" type="submit"
+            class="px-6 py-3 rounded-xl bg-[color:var(--color-accent)] hover:bg-[color:var(--color-accent-deep)] text-white font-semibold transition-colors disabled:opacity-60">
+            Toon het volledige rapport
+          </button>
+          <p id="gate-error" class="text-sm text-[color:var(--color-score-red-soft)]" role="alert"></p>
+        </div>
+      </form>
+    </div>
+
+    <!-- Full report (revealed after unlock) -->
+    <div id="report" class="hidden mt-6 grid gap-3"></div>
+
+    <button
+      id="reset"
+      class="mt-8 mb-4 mx-auto block text-sm text-[color:var(--color-brand)] hover:underline"
+    >
+      ← Ander domein controleren
+    </button>
+  </section>
+
+  <script src="../scripts/app.ts"></script>
+</Base>

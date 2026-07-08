@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+/*
+ * Brand tokens — mirrored from the main PacketFlow site (see scripts/og-image.mjs).
+ * These are PLACEHOLDERS that match the current brand; when Louis supplies the
+ * canonical design tokens (brief §4), swap the values here in one place and the
+ * whole UI follows. Nothing below hardcodes a hex outside this block.
+ */
+@theme {
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Lora", ui-serif, Georgia, serif;
+
+  /* Surfaces & ink */
+  --color-cream: #f5f1ea;
+  --color-cream-soft: #efe9df;
+  --color-ink: #1a1815;
+  --color-muted: #4a453d;
+  --color-line: #e2dccf;
+
+  /* Brand */
+  --color-brand: #0a4daa; /* PacketFlow blue */
+  --color-accent: #f37f21; /* PacketFlow orange */
+  --color-accent-deep: #c2410c;
+
+  /* Traffic light — tuned for AA contrast on the cream surface */
+  --color-score-green: #15803d;
+  --color-score-orange: #b45309;
+  --color-score-red: #b91c1c;
+  --color-score-green-soft: #dcfce7;
+  --color-score-orange-soft: #fef3c7;
+  --color-score-red-soft: #fee2e2;
+}
+
+/* Fonts are self-hostable later; for now load from Google Fonts in the layout. */
+
+html {
+  scroll-behavior: smooth;
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+/* Tabular figures for all the x/100 numbers so bars/scores don't jitter. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Visible focus for keyboard users (redesign-skill: don't drop focus rings). */
+:where(a, button, input, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Skip-link: hidden until focused. */
+.skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: -3rem;
+  z-index: 50;
+  background: var(--color-brand);
+  color: white;
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.5rem;
+  transition: top 0.15s ease;
+}
+.skip-link:focus {
+  top: 0.75rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

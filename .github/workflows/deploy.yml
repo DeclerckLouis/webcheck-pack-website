@@ -1,6 +1,6 @@
 name: Deploy to Cloudflare Pages
 
-# Production deploy (the live site, www.webcheck.packetflow.be):
+# Production deploy (the live site, scan.packetflow.be):
 #   - push to main          -> production deploy (i.e. after a PR is merged)
 #   - workflow_dispatch     -> manual run
 # Nothing here runs on pull requests: a PR must never reach Cloudflare before
@@ -8,13 +8,20 @@ name: Deploy to Cloudflare Pages
 # ready-for-review PR is published there (see github-pages.yml). Merge to main
 # is what promotes a change to production.
 #
-# ONE-TIME SETUP (owner only — CI cannot do this), see the handoff brief §1b:
+# NOTE: the /api/* checks run as Cloudflare Pages Functions, so they only work
+# on this Cloudflare deploy — not on the static GitHub Pages staging preview
+# (staging is for reviewing the UI; see README §Deploy).
+#
+# ONE-TIME SETUP (owner only — CI cannot do this), see README §Deploy:
 #   1. Cloudflare dashboard -> Workers & Pages -> Create -> Pages -> Direct
-#      Upload; name the project `packetflow` (must match --project-name).
+#      Upload; name the project `packetflow-scan` (must match --project-name).
 #   2. Project settings -> Production branch -> `main`.
-#   3. Create an API token with the "Cloudflare Pages -> Edit" permission.
-#   4. Add repo secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
-#   5. Add the custom domain www.packetflow.be + an apex -> www redirect.
+#   3. Create two KV namespaces (CACHE, RATE) and bind them to the Pages project
+#      (Settings -> Functions -> KV namespace bindings), matching wrangler.toml.
+#   4. Create an API token with the "Cloudflare Pages -> Edit" permission.
+#   5. Add repo secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
+#   6. Add the custom domain scan.packetflow.be.
+#   7. (Optional) Turnstile: set PUBLIC_TURNSTILE_SITEKEY + TURNSTILE_SECRET.
 
 on:
   push:
@@ -51,7 +58,7 @@ jobs:
         env:
           # Canonical + sitemap always point at production. Cloudflare Pages
           # serves at the domain root, so the base path is always "/".
-          SITE_URL: https://www.webcheck.packetflow.be
+          SITE_URL: https://scan.packetflow.be
           BASE_PATH: /
         run: npm run build
 
@@ -70,4 +77,4 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         # Only runs for push to main / manual dispatch, so this is always the
         # production branch -> production deployment.
-        run: npx wrangler pages deploy dist --project-name=packetflow --branch=${{ github.ref_name }} --commit-dirty=true
+        run: npx wrangler pages deploy dist --project-name=packetflow-scan --branch=${{ github.ref_name }} --commit-dirty=true

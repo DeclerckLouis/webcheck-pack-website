@@ -1,0 +1,10 @@
+# Local secrets for `wrangler pages dev` / `astro dev` (copy to .dev.vars).
+# .dev.vars is git-ignored. In production these are set in the Cloudflare
+# Pages dashboard, not here.
+
+# Odoo CRM base URL (defaults to https://louisdeclerck.odoo.com if unset).
+PUBLIC_ODOO_URL="https://louisdeclerck.odoo.com"
+
+# Cloudflare Turnstile (optional). Leave both empty to keep Turnstile disabled.
+# PUBLIC_TURNSTILE_SITEKEY=""
+# TURNSTILE_SECRET=""
