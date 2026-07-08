@@ -5,14 +5,11 @@
 # uploads. `astro dev` reads the bindings below through platformProxy so KV works
 # locally with no extra setup.
 #
-# ONE-TIME SETUP (owner only — see README §Deploy):
-#   1. Create the Pages project named `packetflow-scan` (matches deploy.yml).
-#   2. Create two KV namespaces and paste their ids below:
-#        npx wrangler kv namespace create CACHE
-#        npx wrangler kv namespace create RATE
-#      (or via the Cloudflare dashboard → Workers & Pages → KV).
-#   3. (Optional) Turnstile: add TURNSTILE_SECRET as an encrypted var and set
-#      PUBLIC_TURNSTILE_SITEKEY. Left empty = Turnstile disabled (hook only).
+# SETUP: the Pages project and the two KV namespaces below already exist (the
+# deploy workflow creates the project idempotently; the namespaces were created
+# in the account). The only remaining optional step:
+#   - Turnstile: add TURNSTILE_SECRET as an encrypted var and set
+#     PUBLIC_TURNSTILE_SITEKEY. Left empty = Turnstile disabled (hook only).
 
 name = "packetflow-scan"
 pages_build_output_dir = "dist"
@@ -24,12 +21,12 @@ compatibility_flags = ["nodejs_compat"]
 # email-gate can unlock it without re-running the checks.
 [[kv_namespaces]]
 binding = "CACHE"
-id = "REPLACE_WITH_CACHE_NAMESPACE_ID"
+id = "c869efe8477d4c679053894140af5871"
 
 # Rate limiting: per-IP request counters (short TTL window).
 [[kv_namespaces]]
 binding = "RATE"
-id = "REPLACE_WITH_RATE_NAMESPACE_ID"
+id = "79ee3e526b2c40eeb010c4d44bb36680"
 
 [vars]
 PUBLIC_ODOO_URL = "https://louisdeclerck.odoo.com"
