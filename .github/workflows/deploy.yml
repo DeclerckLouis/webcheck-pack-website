@@ -77,11 +77,13 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        # First ensure the project exists (idempotent — ignores "already exists"
-        # so it's a no-op on every run after the first), then deploy.
+        # Ensure the project exists, then deploy. We only call `project create`
+        # when it's actually missing — calling it unconditionally logs a scary
+        # (but harmless) "already exists" error on every run after the first.
         # --branch drives prod vs preview: on push to main, github.ref_name is
         # `main` (the production branch) -> production; on a PR, github.head_ref
         # is the feature branch -> preview deployment.
         run: |
-          npx wrangler pages project create packetflow-scan --production-branch=main || true
+          npx wrangler pages project list | grep -q "packetflow-scan" \
+            || npx wrangler pages project create packetflow-scan --production-branch=main
           npx wrangler pages deploy dist --project-name=packetflow-scan --branch=${{ github.head_ref || github.ref_name }} --commit-dirty=true
