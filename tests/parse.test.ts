@@ -4,6 +4,7 @@ import {
   parseDmarc,
   classifyMx,
   reverseIpv4,
+  classifyRblAnswer,
 } from "../src/lib/parse";
 
 describe("countSpfLookups (port of count_spf_lookups)", () => {
@@ -64,5 +65,28 @@ describe("reverseIpv4", () => {
     expect(reverseIpv4("999.1.1.1")).toBeNull();
     expect(reverseIpv4("1.2.3")).toBeNull();
     expect(reverseIpv4("::1")).toBeNull();
+  });
+});
+
+describe("classifyRblAnswer (RBL return-code reading)", () => {
+  it("treats real listing codes as listed", () => {
+    expect(classifyRblAnswer(["127.0.0.2"])).toBe("listed");
+    expect(classifyRblAnswer(["127.0.1.4"])).toBe("listed");
+    expect(classifyRblAnswer(["127.0.0.2", "127.0.0.4"])).toBe("listed");
+  });
+
+  it("treats 127.255.255.x status codes as refused, NOT listed", () => {
+    // Spamhaus returns 127.255.255.254 for queries via public resolvers — the
+    // bug this guards against (it must not read as a listing).
+    expect(classifyRblAnswer(["127.255.255.254"])).toBe("refused");
+    expect(classifyRblAnswer(["127.255.255.252"])).toBe("refused");
+  });
+
+  it("treats no answer as clean", () => {
+    expect(classifyRblAnswer([])).toBe("clean");
+  });
+
+  it("prefers a real listing even when a refusal code is also present", () => {
+    expect(classifyRblAnswer(["127.255.255.254", "127.0.0.2"])).toBe("listed");
   });
 });

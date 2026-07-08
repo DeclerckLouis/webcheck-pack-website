@@ -14,6 +14,7 @@ import {
   parseDmarc,
   classifyMx,
   reverseIpv4,
+  classifyRblAnswer,
 } from "./parse";
 import {
   DKIM_SELECTORS,
@@ -217,7 +218,8 @@ export async function checkBlacklist(domain: string): Promise<CheckOutcome> {
   const ip = a.answers[0]?.data;
 
   const listings: string[] = [];
-  let couldCheck = false;
+  let couldCheck = false; // got at least one definitive listed/not-listed answer
+  let refusedAny = false; // at least one RBL refused (e.g. Spamhaus via public DoH)
 
   for (const rbl of RBLS) {
     let query: string | null = null;
@@ -230,10 +232,27 @@ export async function checkBlacklist(domain: string): Promise<CheckOutcome> {
       query = `${domain}.${rbl.zone}`;
     }
     const res = await dohQuery(query, "A");
-    if (res.status === 0 || res.status === 3) couldCheck = true; // got a definitive answer
-    // A listing returns an A record (typically 127.0.0.x).
-    if (res.answers.length > 0) listings.push(rbl.label);
+    // Read the RBL return code, not just "an answer exists": the 127.255.255.x
+    // range is a status/refusal code (Spamhaus returns it for queries via public
+    // resolvers), NOT a real listing. See classifyRblAnswer.
+    switch (classifyRblAnswer(res.answers.map((ans) => ans.data))) {
+      case "listed":
+        listings.push(rbl.label);
+        couldCheck = true;
+        break;
+      case "refused":
+        refusedAny = true;
+        break;
+      case "clean":
+        if (res.status === 0 || res.status === 3) couldCheck = true;
+        break;
+    }
   }
+
+  // When a high-signal RBL refused the query, say so rather than implying a
+  // confidently-clean result (matches the README's documented limitation).
+  const refusalCaveat =
+    "Sommige blacklists (o.a. Spamhaus) beantwoorden geen opvragingen via publieke DNS-resolvers, dus deze uitslag is indicatief.";
 
   if (listings.length > 0) {
     return {
@@ -248,14 +267,14 @@ export async function checkBlacklist(domain: string): Promise<CheckOutcome> {
       score: max,
       status: "niet te bepalen",
       detail: "De blacklists konden niet betrouwbaar bevraagd worden.",
-      caveat:
-        "Sommige blacklists (o.a. Spamhaus) beantwoorden geen opvragingen via publieke DNS-resolvers. Deze uitslag is indicatief.",
+      caveat: refusalCaveat,
     };
   }
   return {
     score: max,
     status: "schoon",
     detail: "Niet aangetroffen op de gecontroleerde blacklists.",
+    caveat: refusedAny ? refusalCaveat : undefined,
   };
 }
 
