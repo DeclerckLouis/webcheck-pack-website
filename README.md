@@ -94,19 +94,17 @@ Cloudflare Pages:
   its own `*.pages.dev` URL. Unlike a static host, previews **run the `/api/*`
   Functions**, so reviewers can test a real scan before merge.
 
-Both skip cleanly (CI stays green) until the Cloudflare secrets are added.
-
-**Owner setup status:**
+**Owner setup status — all core steps done:**
 
 1. ✅ Repo secrets `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` added.
 2. ✅ KV namespaces **CACHE** + **RATE** created and their ids wired into
    `wrangler.toml`; the deploy applies the bindings.
 3. ✅ Pages project `packetflow-scan` — created automatically by the deploy step
    (`wrangler pages project create --production-branch=main`, idempotent).
-4. ⏳ **Custom domain `scan.packetflow.be`** — add it under the Pages project:
-   Cloudflare dashboard → Workers & Pages → `packetflow-scan` → *Custom domains*
-   → *Set up a custom domain* → `scan.packetflow.be`. If `packetflow.be` is on
-   Cloudflare DNS, the CNAME is created for you.
+4. ✅ **Custom domain `scan.packetflow.be`** — added on the Pages project and
+   resolving to Cloudflare. It serves the **production** deployment, which is
+   published on push to `main` (i.e. once this PR is merged); until then it
+   returns Cloudflare's "Deployment Not Found".
 5. *(Optional)* Turnstile: set `PUBLIC_TURNSTILE_SITEKEY` + `TURNSTILE_SECRET`
    (leave empty to keep it disabled — the hook is already wired in).
 
