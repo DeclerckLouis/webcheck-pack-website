@@ -69,3 +69,20 @@ export function reverseIpv4(ip: string): string | null {
     return null;
   return parts.reverse().join(".");
 }
+
+export type RblVerdict = "listed" | "refused" | "clean";
+
+/**
+ * Classify an RBL's A-record answer set. RBLs encode their result in 127.0.0.0/8:
+ * a real listing is a code like 127.0.0.x / 127.0.1.x, while the 127.255.255.x
+ * range is a *status/error* code — most importantly 127.255.255.254, which
+ * Spamhaus returns when the query arrived via a large public resolver (e.g.
+ * Cloudflare's DoH). Treating that sentinel as a listing marks every domain as
+ * blacklisted, so it must be read as "refused / couldn't check", not "listed".
+ */
+export function classifyRblAnswer(ips: string[]): RblVerdict {
+  const isError = (ip: string) => ip.startsWith("127.255.255.");
+  if (ips.some((ip) => ip.startsWith("127.") && !isError(ip))) return "listed";
+  if (ips.some(isError)) return "refused";
+  return "clean";
+}
