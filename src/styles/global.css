@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
- * Brand tokens — mirrored from the main PacketFlow site (see scripts/og-image.mjs).
+ * Brand tokens — mirrored from the main Packetflow site (see scripts/og-image.mjs).
  * These are PLACEHOLDERS that match the current brand; when Louis supplies the
  * canonical design tokens (brief §4), swap the values here in one place and the
  * whole UI follows. Nothing below hardcodes a hex outside this block.
@@ -18,8 +18,8 @@
   --color-line: #e2dccf;
 
   /* Brand */
-  --color-brand: #0a4daa; /* PacketFlow blue */
-  --color-accent: #f37f21; /* PacketFlow orange */
+  --color-brand: #0a4daa; /* Packetflow blue */
+  --color-accent: #f37f21; /* Packetflow orange */
   --color-accent-deep: #c2410c;
 
   /* Traffic light — tuned for AA contrast on the cream surface */

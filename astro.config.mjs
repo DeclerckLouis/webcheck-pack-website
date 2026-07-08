@@ -1,7 +1,38 @@
 // @ts-check
+import { readdir, readFile, writeFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 import { defineConfig } from "astro/config";
 import cloudflare from "@astrojs/cloudflare";
 import tailwindcss from "@tailwindcss/vite";
+
+// Strip HTML comments from the prerendered output so source comments (e.g. dev
+// notes) never ship to visitors. Only touches emitted .html files; inline JS/CSS
+// and JSON-LD contain no `<!-- -->`, so the plain regex is safe here.
+function stripHtmlComments() {
+  return {
+    name: "strip-html-comments",
+    hooks: {
+      /** @param {{ dir: URL }} ctx */
+      "astro:build:done": async ({ dir }) => {
+        const root = fileURLToPath(dir);
+        /** @param {string} d */
+        const walk = async (d) => {
+          for (const entry of await readdir(d, { withFileTypes: true })) {
+            const p = path.join(d, entry.name);
+            if (entry.isDirectory()) await walk(p);
+            else if (entry.name.endsWith(".html")) {
+              const html = await readFile(p, "utf8");
+              const stripped = html.replace(/<!--[\s\S]*?-->/g, "");
+              if (stripped !== html) await writeFile(p, stripped);
+            }
+          }
+        };
+        await walk(root);
+      },
+    },
+  };
+}
 
 // SITE_URL / BASE_PATH are injected by CI (see .github/workflows/deploy.yml).
 // Cloudflare Pages (production and previews) serves at the domain root, so
@@ -17,6 +48,7 @@ export default defineConfig({
   // with `export const prerender = false`, so the Cloudflare adapter compiles
   // them into dist/_worker.js (Pages Functions) while pages stay static.
   output: "static",
+  integrations: [stripHtmlComments()],
   adapter: cloudflare({
     platformProxy: { enabled: true }, // local KV/bindings via `astro dev`
     // Astro sessions are unused here; point the session store at the existing

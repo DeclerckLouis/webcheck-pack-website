@@ -21,12 +21,7 @@ import Base from "../layouts/Base.astro";
       DKIM, DNSSEC, blacklists en meer. U krijgt een duidelijke score van 0 tot 100.
     </p>
 
-    <!-- Check form -->
     <form id="scan-form" class="mt-8" novalidate>
-      <!--
-        Mode selector — v1 only offers "Algemeen", but the control is present so
-        the future "Beveiliging" scan (brief §6b) drops in without a re-layout.
-      -->
       <div
         class="flex justify-center gap-2 mb-3"
         role="group"
@@ -118,16 +113,15 @@ import Base from "../layouts/Base.astro";
     <!-- Per-category bars -->
     <div id="categories" class="mt-4 grid gap-3"></div>
 
-    <!-- Email gate -->
     <div
       id="gate"
       class="mt-6 bg-[color:var(--color-brand)] text-white rounded-2xl p-6 sm:p-8"
     >
-      <!-- TODO(louis): definitieve wervende copy in eigen stem (brief §8.3) -->
       <h2 class="text-xl font-semibold">Wilt u het volledige rapport?</h2>
       <p class="mt-2 text-white/85">
         Ontvang precies wat er misgaat én hoe u het oplost — in gewone taal,
-        zonder technisch jargon. <em>(Placeholder-tekst — aan te passen.)</em>
+        zonder technisch jargon. U krijgt het volledige rapport meteen op uw
+        scherm.
       </p>
       <form id="gate-form" class="mt-4 grid sm:grid-cols-2 gap-3" novalidate>
         <input type="hidden" id="check-id" name="checkId" />
@@ -159,6 +153,13 @@ import Base from "../layouts/Base.astro";
           <p id="gate-error" class="text-sm text-[color:var(--color-score-red-soft)]" role="alert"></p>
         </div>
       </form>
+      <p class="mt-4 text-xs text-white/70">
+        Uw gegevens worden enkel gebruikt om het rapport te bezorgen en op te
+        volgen — zie ons <a
+          class="underline hover:text-white"
+          href="https://www.packetflow.be/privacy">privacybeleid</a
+        >.
+      </p>
     </div>
 
     <!-- Full report (revealed after unlock) -->
