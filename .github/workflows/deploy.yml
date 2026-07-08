@@ -1,0 +1,73 @@
+name: Deploy to Cloudflare Pages
+
+# Production deploy (the live site, www.webcheck.packetflow.be):
+#   - push to main          -> production deploy (i.e. after a PR is merged)
+#   - workflow_dispatch     -> manual run
+# Nothing here runs on pull requests: a PR must never reach Cloudflare before
+# it's merged. Pre-merge review happens on GitHub Pages staging instead — a
+# ready-for-review PR is published there (see github-pages.yml). Merge to main
+# is what promotes a change to production.
+#
+# ONE-TIME SETUP (owner only — CI cannot do this), see the handoff brief §1b:
+#   1. Cloudflare dashboard -> Workers & Pages -> Create -> Pages -> Direct
+#      Upload; name the project `packetflow` (must match --project-name).
+#   2. Project settings -> Production branch -> `main`.
+#   3. Create an API token with the "Cloudflare Pages -> Edit" permission.
+#   4. Add repo secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
+#   5. Add the custom domain www.packetflow.be + an apex -> www redirect.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+
+concurrency:
+  group: cf-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Build & deploy
+    # Exposed at job level so the deploy step's `if:` can test for it (secrets
+    # can't be referenced directly in an `if` expression).
+    env:
+      CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        env:
+          # Canonical + sitemap always point at production. Cloudflare Pages
+          # serves at the domain root, so the base path is always "/".
+          SITE_URL: https://www.webcheck.packetflow.be
+          BASE_PATH: /
+        run: npm run build
+
+      - name: Deploy to Cloudflare Pages
+        # Skips (CI stays green) until the owner adds the Cloudflare secrets
+        # — see §1b. Once CLOUDFLARE_API_TOKEN exists, deploys run normally.
+        #
+        # Deploys with the wrangler pinned in devDependencies (see package.json)
+        # rather than cloudflare/wrangler-action, which pulled an old, vulnerable
+        # wrangler 3.x at deploy time. wrangler reads the credentials from the
+        # CLOUDFLARE_* env vars. --commit-dirty=true silences the warning about
+        # the generated dist/ in the working tree.
+        if: ${{ env.CF_API_TOKEN != '' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # Only runs for push to main / manual dispatch, so this is always the
+        # production branch -> production deployment.
+        run: npx wrangler pages deploy dist --project-name=packetflow --branch=${{ github.ref_name }} --commit-dirty=true
