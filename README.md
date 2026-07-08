@@ -85,14 +85,16 @@ timestamp) is appended to the `description` field. A failed lead is logged but
 
 ## Deploy
 
-Two GitHub Actions workflows (already present):
+One GitHub Actions workflow — `deploy.yml` — drives both environments on
+Cloudflare Pages:
 
-- **`deploy.yml`** — production, on push to `main` → `wrangler pages deploy` to
-  the Cloudflare Pages project `packetflow-scan`. Skips cleanly until the
-  Cloudflare secrets exist.
-- **`github-pages.yml`** — staging, publishes ready-for-review PRs to GitHub
-  Pages. ⚠️ Static only: the `/api/*` Functions **do not run on staging** — use
-  it to review the UI; the live scan needs the Cloudflare deploy.
+- **Production** — push to `main` → `wrangler pages deploy` to the Cloudflare
+  Pages project `packetflow-scan` (serves `scan.packetflow.be`).
+- **Previews** — every ready-for-review PR → an isolated preview deployment with
+  its own `*.pages.dev` URL. Unlike a static host, previews **run the `/api/*`
+  Functions**, so reviewers can test a real scan before merge.
+
+Both skip cleanly (CI stays green) until the Cloudflare secrets are added.
 
 **One-time owner setup** (also in `deploy.yml` header and `wrangler.toml`):
 
