@@ -1,0 +1,28 @@
+{
+  "name": "webcheck-pack-website",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Domeinscan — public domain health checker for PacketFlow (scan.packetflow.be)",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "cf:dev": "astro build && wrangler pages dev dist",
+    "astro": "astro",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^12.6.0",
+    "astro": "^5.13.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260708.1",
+    "@tailwindcss/vite": "^4.1.0",
+    "@types/node": "^26.1.1",
+    "tailwindcss": "^4.1.0",
+    "vitest": "^3.2.0",
+    "wrangler": "^4.42.0"
+  }
+}

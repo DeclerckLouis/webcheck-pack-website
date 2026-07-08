@@ -78,13 +78,13 @@ const html = `<!doctype html>
 
     <div>
       <div class="rule"></div>
-      <h1>Uw lokale <span class="hi">IT-partner</span> in West-Vlaanderen</h1>
-      <p class="sub">Voor praktijken, kantoren, horeca &amp; verenigingen</p>
+      <h1>Hoe gezond is <span class="hi">uw domein</span>?</h1>
+      <p class="sub">Gratis domeinscan — SPF, DMARC, DKIM, DNSSEC &amp; meer</p>
     </div>
 
     <div class="foot">
-      <span class="pillars">Lokaal · Persoonlijk · Scherp geprijsd</span>
-      <span class="domain">www.packetflow.be</span>
+      <span class="pillars">Score van 0 tot 100 · in enkele seconden</span>
+      <span class="domain">scan.packetflow.be</span>
     </div>
   </body>
 </html>`;

@@ -1,0 +1,34 @@
+# Cloudflare Pages configuration for Domeinscan (scan.packetflow.be).
+#
+# The Astro Cloudflare adapter builds the site (static pages + a _worker.js that
+# serves the /api routes) into ./dist, which is what `wrangler pages deploy dist`
+# uploads. `astro dev` reads the bindings below through platformProxy so KV works
+# locally with no extra setup.
+#
+# SETUP: the Pages project and the two KV namespaces below already exist (the
+# deploy workflow creates the project idempotently; the namespaces were created
+# in the account). The only remaining optional step:
+#   - Turnstile: add TURNSTILE_SECRET as an encrypted var and set
+#     PUBLIC_TURNSTILE_SITEKEY. Left empty = Turnstile disabled (hook only).
+
+name = "packetflow-scan"
+pages_build_output_dir = "dist"
+compatibility_date = "2025-07-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Result cache: normalized domain+mode -> full report JSON (TTL from
+# src/config/scoring.ts). Also stores the full report under its checkId so the
+# email-gate can unlock it without re-running the checks.
+[[kv_namespaces]]
+binding = "CACHE"
+id = "c869efe8477d4c679053894140af5871"
+
+# Rate limiting: per-IP request counters (short TTL window).
+[[kv_namespaces]]
+binding = "RATE"
+id = "79ee3e526b2c40eeb010c4d44bb36680"
+
+[vars]
+PUBLIC_ODOO_URL = "https://louisdeclerck.odoo.com"
+# PUBLIC_TURNSTILE_SITEKEY = ""   # set to enable Turnstile widget
+# TURNSTILE_SECRET is an encrypted secret — set via dashboard, not here.
