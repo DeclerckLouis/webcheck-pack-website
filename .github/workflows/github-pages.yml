@@ -9,15 +9,19 @@ name: Deploy to GitHub Pages
 # URL. If two PRs are ready at the same time, the most recent build wins. Draft
 # PRs are skipped (see the `if` on the build job).
 #
+# NOTE: this staging preview is static only — the /api/* Cloudflare Pages
+# Functions do NOT run here. Use it to review the UI; the live scan needs the
+# Cloudflare deploy (deploy.yml).
+#
 # GitHub Pages serves under the project sub-path, so the build uses the base
 # path resolved by configure-pages — unlike the Cloudflare build, which always
 # serves at the domain root.
 #
-# ONE-TIME SETUP (required, owner only — CI cannot do this):
-#   1. Repo → Settings → Pages → "Build and deployment" → Source: "GitHub Actions".
-#   2. Repo → Settings → Environments → github-pages → "Deployment branches and
-#      tags": allow the PR branches to deploy (e.g. "No restriction"), otherwise
-#      a deploy from a non-default branch is rejected.
+# SETUP: the build step below auto-enables Pages (enablement: true) on first
+# run. The only owner-side step that may still be needed:
+#   - Repo → Settings → Environments → github-pages → "Deployment branches and
+#     tags": allow the PR branches to deploy (e.g. "No restriction"), otherwise
+#     a deploy from a non-default branch is rejected.
 on:
   pull_request:
     types: [opened, reopened, ready_for_review, synchronize]
@@ -52,6 +56,11 @@ jobs:
       - name: Resolve Pages base path
         id: pages
         uses: actions/configure-pages@v5
+        with:
+          # Auto-provision the Pages site on first run instead of failing when
+          # Pages hasn't been enabled yet (uses the workflow's pages: write
+          # token). Owners can still switch the source in Settings → Pages.
+          enablement: true
 
       - name: Install dependencies
         run: npm ci
