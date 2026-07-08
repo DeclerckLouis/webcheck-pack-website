@@ -96,14 +96,17 @@ Cloudflare Pages:
 
 Both skip cleanly (CI stays green) until the Cloudflare secrets are added.
 
-**One-time owner setup** (also in `deploy.yml` header and `wrangler.toml`):
+**Owner setup status:**
 
-1. Create the Cloudflare Pages project `packetflow-scan` (production branch `main`).
-2. Create two KV namespaces and bind them as **CACHE** and **RATE**
-   (`npx wrangler kv namespace create CACHE`, same for `RATE`); paste the ids
-   into `wrangler.toml` and/or add the bindings in the Pages dashboard.
-3. Add repo secrets `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`.
-4. Add the custom domain `scan.packetflow.be`.
+1. ✅ Repo secrets `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` added.
+2. ✅ KV namespaces **CACHE** + **RATE** created and their ids wired into
+   `wrangler.toml`; the deploy applies the bindings.
+3. ✅ Pages project `packetflow-scan` — created automatically by the deploy step
+   (`wrangler pages project create --production-branch=main`, idempotent).
+4. ⏳ **Custom domain `scan.packetflow.be`** — add it under the Pages project:
+   Cloudflare dashboard → Workers & Pages → `packetflow-scan` → *Custom domains*
+   → *Set up a custom domain* → `scan.packetflow.be`. If `packetflow.be` is on
+   Cloudflare DNS, the CNAME is created for you.
 5. *(Optional)* Turnstile: set `PUBLIC_TURNSTILE_SITEKEY` + `TURNSTILE_SECRET`
    (leave empty to keep it disabled — the hook is already wired in).
 
