@@ -39,10 +39,15 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
 
   const ip = request.headers.get("cf-connecting-ip") ?? clientAddress ?? "";
 
-  // Optional bot check (no-op unless TURNSTILE_SECRET is configured).
-  const human = await verifyTurnstile(env?.TURNSTILE_SECRET, payload.turnstileToken, ip);
-  if (!human) {
-    return json({ error: "Verificatie mislukt. Probeer het opnieuw." }, 403);
+  // Optional bot check (no-op unless TURNSTILE_SECRET is configured). On failure
+  // we surface the Turnstile error-codes so a misconfiguration is diagnosable
+  // from the response rather than an opaque 403.
+  const verdict = await verifyTurnstile(env?.TURNSTILE_SECRET, payload.turnstileToken, ip);
+  if (!verdict.ok) {
+    return json(
+      { error: "Verificatie mislukt. Probeer het opnieuw.", turnstile: verdict.errorCodes },
+      403,
+    );
   }
 
   const rate = await checkRateLimit(env?.RATE, ip);

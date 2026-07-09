@@ -72,8 +72,17 @@ declare const turnstile:
   | { getResponse: (id?: string) => string | undefined; reset: (id?: string) => void }
   | undefined;
 
-/** Read the current Turnstile token, or undefined when the widget isn't used. */
+/** True when a Turnstile widget is on the page (i.e. a sitekey was configured). */
+function turnstileConfigured(): boolean {
+  return !!document.querySelector(".cf-turnstile");
+}
+
+/** Read the current Turnstile token, or undefined when none is ready yet. */
 function turnstileToken(): string | undefined {
+  if (typeof turnstile !== "undefined") {
+    const t = turnstile.getResponse();
+    if (t) return t;
+  }
   const input = document.querySelector<HTMLInputElement>(
     'input[name="cf-turnstile-response"]',
   );
@@ -206,6 +215,18 @@ function reset() {
 
 async function runScan(domain: string) {
   setError($("form-error"), "");
+
+  // If Turnstile is on the page but hasn't produced a token yet, don't fire a
+  // request that's guaranteed to fail verification — tell the user to wait.
+  const token = turnstileToken();
+  if (turnstileConfigured() && !token) {
+    setError(
+      $("form-error"),
+      "De beveiligingscontrole laadt nog. Probeer het over een paar seconden opnieuw.",
+    );
+    return;
+  }
+
   $("results")?.classList.add("hidden");
   show("loading", true);
   const submit = $("scan-submit") as HTMLButtonElement | null;
@@ -215,10 +236,11 @@ async function runScan(domain: string) {
     const res = await fetch(api("api/check"), {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ domain, mode: "general", turnstileToken: turnstileToken() }),
+      body: JSON.stringify({ domain, mode: "general", turnstileToken: token }),
     });
-    const data = (await res.json()) as Summary & { error?: string };
+    const data = (await res.json()) as Summary & { error?: string; turnstile?: string[] };
     if (!res.ok) {
+      if (data.turnstile) console.warn("Turnstile verification failed:", data.turnstile);
       setError($("form-error"), data.error ?? "Er ging iets mis. Probeer opnieuw.");
       return;
     }
