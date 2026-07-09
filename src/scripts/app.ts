@@ -275,10 +275,15 @@ async function unlock(checkId: string) {
     const data = (await res.json()) as {
       error?: string;
       report?: { categories?: ReportCategory[] };
+      leadStored?: boolean;
+      leadError?: string;
     };
     if (!res.ok) {
       setError($("gate-error"), data.error ?? "Er ging iets mis. Probeer opnieuw.");
       return;
+    }
+    if (data.leadStored === false) {
+      console.warn("Lead not stored in Odoo:", data.leadError);
     }
     renderReport(data.report?.categories ?? []);
     $("report")?.scrollIntoView({ behavior: "smooth", block: "start" });

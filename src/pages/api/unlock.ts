@@ -61,7 +61,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
     console.error("Odoo lead forward failed:", lead.error);
   }
 
-  return json({ report: full, leadStored: lead.ok });
+  // leadStored + leadError are returned so a CRM hiccup is diagnosable from the
+  // browser Network tab (the report is delivered regardless — brief §7).
+  return json({
+    report: full,
+    leadStored: lead.ok,
+    leadId: lead.ok ? lead.id : undefined,
+    leadError: lead.ok ? undefined : lead.error,
+  });
 };
 
 export const GET: APIRoute = () => json({ error: "Gebruik POST." }, 405);

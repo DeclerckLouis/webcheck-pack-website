@@ -51,9 +51,23 @@ export async function forwardLead(
       method: "POST",
       body: form,
     });
-    if (!res.ok) return { ok: false, error: `Odoo HTTP ${res.status}` };
-    // website_form returns {"id": <leadId>} on success.
-    const data = (await res.json().catch(() => ({}))) as { id?: number };
+    const body = await res.text();
+    if (!res.ok) {
+      return { ok: false, error: `Odoo HTTP ${res.status}: ${body.slice(0, 300)}` };
+    }
+    // website_form answers HTTP 200 even for validation failures (body
+    // `{"id": false}` or `{"error": ...}`, or an HTML error page when crm.lead
+    // isn't form-enabled). A genuine success carries a numeric record id — treat
+    // anything else as a failure so `leadStored` never lies.
+    let data: { id?: unknown; error?: unknown } = {};
+    try {
+      data = JSON.parse(body);
+    } catch {
+      return { ok: false, error: `Odoo gaf geen JSON terug: ${body.slice(0, 300)}` };
+    }
+    if (typeof data.id !== "number") {
+      return { ok: false, error: `Odoo 200 zonder lead-id: ${body.slice(0, 300)}` };
+    }
     return { ok: true, id: data.id };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "onbekend" };
