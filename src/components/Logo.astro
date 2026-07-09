@@ -1,0 +1,86 @@
+---
+// Packetflow logo — blue square with a flowing cut + orange quarter,
+// optionally with the "Packetflow" wordmark and tagline. Geometry matches
+// the official logo SVG from the design system.
+interface Props {
+  variant?: "full" | "mark" | "wordmark";
+  size?: number;
+  tagline?: boolean;
+  onDark?: boolean;
+  class?: string;
+}
+const {
+  variant = "full",
+  size = 30,
+  tagline = false,
+  onDark = false,
+  class: className,
+} = Astro.props;
+
+const wordColor = onDark ? "var(--cream)" : "var(--ink)";
+const tagColor = onDark ? "var(--grey-300)" : "var(--grey-500)";
+---
+
+<span
+  class:list={["logo", className]}
+  style={`gap:${size * 0.34}px`}
+  aria-label="Packetflow"
+>
+  {
+    variant !== "wordmark" && (
+      <svg viewBox="10 10 30 30" width={size} height={size} aria-hidden="true">
+        <path
+          d="M 10 10 L 10 40 L 25 40 L 25 25 C 25 16.7 31.7 10 40 10 L 10 10 Z"
+          fill="#0A4DAA"
+        />
+        <path d="M 40 40 L 25 40 L 25 25 C 25 33.3 31.7 40 40 40 Z" fill="#F37F21" />
+      </svg>
+    )
+  }
+  {
+    variant !== "mark" && (
+      <span class="logo-word">
+        <span
+          class="logo-name"
+          style={`font-size:${size * 0.62}px;color:${wordColor}`}
+        >
+          Packetflow
+        </span>
+        {tagline && (
+          <span
+            class="logo-tag"
+            style={`font-size:${size * 0.3}px;color:${tagColor}`}
+          >
+            Uw partner in IT
+          </span>
+        )}
+      </span>
+    )
+  }
+</span>
+
+<style>
+  .logo {
+    display: inline-flex;
+    align-items: center;
+  }
+  .logo svg {
+    flex: none;
+  }
+  .logo-word {
+    display: flex;
+    flex-direction: column;
+    line-height: 1;
+  }
+  .logo-name {
+    font-family: var(--font-sans);
+    font-weight: var(--fw-semibold);
+    letter-spacing: -0.01em;
+  }
+  .logo-tag {
+    font-family: var(--font-sans);
+    font-weight: var(--fw-regular);
+    letter-spacing: 0.02em;
+    margin-top: 2px;
+  }
+</style>

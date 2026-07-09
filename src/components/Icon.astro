@@ -1,0 +1,62 @@
+---
+// Build-time inline Lucide icons. The SVG is read from the pinned `lucide-static`
+// package during the build and inlined directly into the HTML — so there is no
+// runtime CDN request and no client-side icon hydration (better CWV + no
+// third-party reliability footgun). If a name can't be resolved the component
+// renders an empty, hidden span rather than failing the build.
+import fs from "node:fs";
+import path from "node:path";
+import { createRequire } from "node:module";
+
+interface Props {
+  name: string;
+  size?: number;
+  class?: string;
+  color?: string;
+}
+const { name, size = 18, class: className, color } = Astro.props;
+
+// Resolve the icon SVG from the `lucide-static` package. We use Node's module
+// resolution (createRequire) rather than a relative `../../node_modules` path
+// off import.meta.url: Astro 6 bundles components to a different location at
+// build time, so the relative path no longer resolves and every icon would
+// silently render empty. createRequire walks up node_modules from this module,
+// and we fall back to the project root just in case.
+const require = createRequire(import.meta.url);
+let svg = "";
+try {
+  let file: string;
+  try {
+    file = require.resolve(`lucide-static/icons/${name}.svg`);
+  } catch {
+    file = path.join(process.cwd(), "node_modules/lucide-static/icons", `${name}.svg`);
+  }
+  svg = fs.readFileSync(file, "utf-8");
+} catch {
+  svg = "";
+}
+
+if (svg) {
+  // Strip the license comment, size it, recolour it (Lucide strokes use
+  // `currentColor`, so a `color` on the root cascades), set the caller's class,
+  // and mark it decorative.
+  svg = svg
+    .replace(/<!--[\s\S]*?-->/, "")
+    .replace(/\sclass="[^"]*"/, className ? ` class="${className}"` : "")
+    .replace(/width="24"/, `width="${size}"`)
+    .replace(/height="24"/, `height="${size}"`)
+    .replace(
+      /<svg/,
+      `<svg aria-hidden="true"${color ? ` style="color:${color}"` : ""}`,
+    )
+    .trim();
+}
+---
+
+{
+  svg ? (
+    <Fragment set:html={svg} />
+  ) : (
+    <span class={className} aria-hidden="true" />
+  )
+}

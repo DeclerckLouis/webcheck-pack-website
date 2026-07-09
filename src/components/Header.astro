@@ -1,0 +1,71 @@
+---
+// Slim header for the scan tool: the main site's header bar style + logo, but
+// without the site navigation menu (irrelevant on a single-page tool). Keeps the
+// phone + "Plan een gesprek" CTA as useful contact actions, linking to the main
+// site.
+import { site } from "../data/site";
+import Logo from "./Logo.astro";
+import Button from "./Button.astro";
+import Icon from "./Icon.astro";
+import { url } from "../lib/url";
+---
+
+<header class="site-header">
+  <div class="site-header__in">
+    <a href={url("/")} aria-label="Packetflow — home">
+      <Logo variant="full" size={30} />
+    </a>
+
+    <div class="site-header__actions">
+      <a href={site.phoneHref} class="site-header__phone">
+        <Icon name="phone" size={16} />
+        {site.phone}
+      </a>
+      <Button href="/contact" variant="primary" size="sm">Plan een gesprek</Button>
+    </div>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: rgba(251, 249, 244, 0.85);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .site-header__in {
+    max-width: var(--container-lg);
+    margin: 0 auto;
+    padding: 14px var(--space-5);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-5);
+  }
+  .site-header__actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .site-header__phone {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    color: var(--text-strong);
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .site-header__phone:hover {
+    color: var(--primary);
+  }
+
+  @media (max-width: 560px) {
+    .site-header__phone {
+      display: none;
+    }
+  }
+</style>

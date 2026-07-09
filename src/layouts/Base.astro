@@ -1,5 +1,7 @@
 ---
 import "../styles/global.css";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
 
 interface Props {
   title?: string;
@@ -15,7 +17,6 @@ const {
 const base = import.meta.env.BASE_URL;
 const canonical = new URL(Astro.url.pathname, Astro.site).toString();
 const ogImage = new URL(`${base}images/og-image.png`, Astro.site).toString();
-const year = new Date().getFullYear();
 
 // Structured data (comment: feeds the GEO/AI-visibility effort). Mirrors the
 // main site's Packetflow business details; the tool itself is a WebApplication.
@@ -89,76 +90,12 @@ const jsonLd = {
   <body class="min-h-dvh flex flex-col" data-api-base={base}>
     <a href="#main" class="skip-link">Naar de inhoud</a>
 
-    <header class="w-full">
-      <div class="mx-auto max-w-5xl px-5 py-5 flex items-center gap-3">
-        <svg viewBox="10 10 30 30" width="34" height="34" aria-hidden="true">
-          <path
-            d="M 10 10 L 10 40 L 25 40 L 25 25 C 25 16.7 31.7 10 40 10 L 10 10 Z"
-            fill="var(--color-brand)"
-          />
-          <path
-            d="M 40 40 L 25 40 L 25 25 C 25 33.3 31.7 40 40 40 Z"
-            fill="var(--color-accent)"
-          />
-        </svg>
-        <span class="font-semibold tracking-tight text-lg">Packetflow</span>
-        <span class="text-[color:var(--color-muted)] text-sm hidden sm:inline"
-          >· Domeinscan</span
-        >
-      </div>
-    </header>
+    <Header />
 
     <main id="main" class="flex-1 w-full">
       <slot />
     </main>
 
-    <footer class="w-full border-t border-[color:var(--color-line)] mt-16">
-      <div
-        class="mx-auto max-w-5xl px-5 py-8 grid gap-6 sm:grid-cols-3 text-sm text-[color:var(--color-muted)]"
-      >
-        <div>
-          <p class="font-semibold text-[color:var(--color-ink)]">Packetflow</p>
-          <p class="mt-1">Uw lokale IT-partner in West-Vlaanderen.</p>
-          <p class="mt-2">Hageweg 39, 8490 Jabbeke</p>
-          <p>KBO BE 1024.713.047</p>
-        </div>
-
-        <div>
-          <p class="font-semibold text-[color:var(--color-ink)]">Contact</p>
-          <p class="mt-1">
-            <a
-              class="hover:text-[color:var(--color-brand)]"
-              href="tel:+32468227212">+32 468 22 72 12</a
-            >
-          </p>
-          <p>
-            <a
-              class="hover:text-[color:var(--color-brand)]"
-              href="mailto:louis@packetflow.be">louis@packetflow.be</a
-            >
-          </p>
-        </div>
-
-        <nav class="flex flex-col gap-1 sm:items-end">
-          <a class="hover:text-[color:var(--color-brand)]" href="https://www.packetflow.be"
-            >Hoofdsite</a
-          >
-          <a
-            class="hover:text-[color:var(--color-brand)]"
-            href="https://www.packetflow.be/privacy">Privacybeleid</a
-          >
-          <a
-            class="hover:text-[color:var(--color-brand)]"
-            href="https://www.packetflow.be/contact">Contact</a
-          >
-        </nav>
-      </div>
-
-      <div
-        class="mx-auto max-w-5xl px-5 pb-8 text-xs text-[color:var(--color-muted)]"
-      >
-        © {year} Packetflow — Lokaal · Persoonlijk · Scherp geprijsd.
-      </div>
-    </footer>
+    <Footer />
   </body>
 </html>
