@@ -8,8 +8,10 @@
 # SETUP: the Pages project and the two KV namespaces below already exist (the
 # deploy workflow creates the project idempotently; the namespaces were created
 # in the account). The only remaining optional step:
-#   - Turnstile: add TURNSTILE_SECRET as an encrypted var and set
-#     PUBLIC_TURNSTILE_SITEKEY. Left empty = Turnstile disabled (hook only).
+#   - Turnstile (optional): add TURNSTILE_SECRET as an encrypted var on the Pages
+#     project (read by the Worker at runtime). The PUBLIC_TURNSTILE_SITEKEY is a
+#     *build-time* value inlined into the client, so it goes in the GitHub Actions
+#     build env, NOT here. Both empty = Turnstile disabled; set both to enable.
 
 name = "packetflow-scan"
 pages_build_output_dir = "dist"

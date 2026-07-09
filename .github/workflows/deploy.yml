@@ -62,6 +62,12 @@ jobs:
           # root, so the base path is always "/".
           SITE_URL: https://scan.packetflow.be
           BASE_PATH: /
+          # PUBLIC_ vars are inlined into the client bundle at build time, so the
+          # Turnstile sitekey must be present HERE (a Cloudflare runtime var can't
+          # reach the prerendered page). Empty = widget stays off. Pair it with
+          # TURNSTILE_SECRET set as an encrypted var in the Cloudflare Pages
+          # project (NOT a GitHub secret — that never reaches the Worker).
+          PUBLIC_TURNSTILE_SITEKEY: ${{ secrets.PUBLIC_TURNSTILE_SITEKEY }}
         run: npm run build
 
       - name: Deploy to Cloudflare Pages
