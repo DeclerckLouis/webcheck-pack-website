@@ -108,8 +108,11 @@ Cloudflare Pages:
 5. *(Optional)* Turnstile — the two keys live in **different** places, and
    neither is a GitHub *repo* secret that the running app reads directly:
    - `PUBLIC_TURNSTILE_SITEKEY` is inlined into the browser bundle at **build
-     time**, so add it as a **GitHub Actions secret** (the Build step passes it
-     through) — a Cloudflare runtime var can't reach the prerendered page.
+     time**, so it must be set in GitHub, not Cloudflare — a Cloudflare runtime
+     var can't reach the prerendered page. It's public (it ships in the HTML), so
+     add it as a **repository Variable** (Settings → Secrets and variables →
+     Actions → *Variables* tab → New repository variable). The Build step reads
+     `vars.PUBLIC_TURNSTILE_SITEKEY`.
    - `TURNSTILE_SECRET` is read by the Worker at **runtime**, so add it as an
      **encrypted variable in the Cloudflare Pages project** (Settings → Variables
      and Secrets). A GitHub repo secret never reaches the Worker.

@@ -64,10 +64,13 @@ jobs:
           BASE_PATH: /
           # PUBLIC_ vars are inlined into the client bundle at build time, so the
           # Turnstile sitekey must be present HERE (a Cloudflare runtime var can't
-          # reach the prerendered page). Empty = widget stays off. Pair it with
-          # TURNSTILE_SECRET set as an encrypted var in the Cloudflare Pages
-          # project (NOT a GitHub secret — that never reaches the Worker).
-          PUBLIC_TURNSTILE_SITEKEY: ${{ secrets.PUBLIC_TURNSTILE_SITEKEY }}
+          # reach the prerendered page). The sitekey is public (it ships in the
+          # HTML), so it's a repository *Variable*, not a secret — that keeps it
+          # readable by this job without scoping it to a GitHub Environment. Empty
+          # = widget stays off. Pair it with TURNSTILE_SECRET set as an encrypted
+          # var in the Cloudflare Pages project (NOT a GitHub secret — that never
+          # reaches the Worker).
+          PUBLIC_TURNSTILE_SITEKEY: ${{ vars.PUBLIC_TURNSTILE_SITEKEY }}
         run: npm run build
 
       - name: Deploy to Cloudflare Pages
