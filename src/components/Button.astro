@@ -1,0 +1,123 @@
+---
+// Packetflow Button — the workhorse CTA.
+// variant: primary (orange), accent (blue), secondary (outline), ghost
+// size: sm | md | lg
+import Icon from "./Icon.astro";
+import { url } from "../lib/url";
+interface Props {
+  href?: string;
+  variant?: "primary" | "accent" | "secondary" | "ghost";
+  size?: "sm" | "md" | "lg";
+  iconLeft?: string;
+  iconRight?: string;
+  fullWidth?: boolean;
+  type?: "button" | "submit";
+  class?: string;
+}
+const {
+  href,
+  variant = "primary",
+  size = "md",
+  iconLeft,
+  iconRight,
+  fullWidth = false,
+  type = "button",
+  class: className,
+} = Astro.props;
+
+const Tag = href ? "a" : "button";
+const iconSize = size === "lg" ? 18 : 17;
+const rest = href ? { href: url(href) } : { type };
+---
+
+<Tag
+  class:list={["btn", `btn--${variant}`, `btn--${size}`, fullWidth && "btn--full", className]}
+  {...rest}
+>
+  {iconLeft && <Icon name={iconLeft} size={iconSize} />}
+  <slot />
+  {iconRight && <Icon name={iconRight} size={iconSize} />}
+</Tag>
+
+<style>
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: var(--font-sans);
+    font-weight: var(--fw-medium);
+    line-height: 1;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    text-align: center;
+    transition:
+      transform var(--dur-fast) var(--ease-out),
+      background var(--dur-fast) var(--ease-out),
+      border-color var(--dur-fast) var(--ease-out);
+  }
+  .btn:active {
+    transform: translateY(1px);
+  }
+  .btn--full {
+    display: flex;
+    width: 100%;
+  }
+
+  /* sizes */
+  .btn--sm {
+    padding: 8px 14px;
+    font-size: var(--text-sm);
+    gap: 6px;
+    border-radius: var(--radius-sm);
+  }
+  .btn--md {
+    padding: 11px 20px;
+    font-size: var(--text-base);
+    border-radius: var(--radius-md);
+  }
+  .btn--lg {
+    padding: 15px 28px;
+    font-size: var(--text-md);
+    gap: 10px;
+    border-radius: var(--radius-md);
+  }
+
+  /* variants */
+  .btn--primary {
+    background: var(--primary);
+    color: var(--text-on-brand);
+    border: 1px solid var(--primary);
+    box-shadow: var(--shadow-sm);
+  }
+  .btn--primary:hover {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+  }
+  .btn--accent {
+    background: var(--accent);
+    color: #fff;
+    border: 1px solid var(--accent);
+    box-shadow: var(--shadow-sm);
+  }
+  .btn--accent:hover {
+    background: var(--accent-press);
+    border-color: var(--accent-press);
+  }
+  .btn--secondary {
+    background: transparent;
+    color: var(--primary);
+    border: 1px solid var(--border-strong);
+  }
+  .btn--secondary:hover {
+    background: var(--orange-50);
+  }
+  .btn--ghost {
+    background: transparent;
+    color: var(--text-body);
+    border: 1px solid transparent;
+  }
+  .btn--ghost:hover {
+    background: var(--cream-deep);
+  }
+</style>

@@ -1,5 +1,5 @@
 /**
- * Lead forwarding — REUSES the main PacketFlow site's Odoo integration (brief §2,
+ * Lead forwarding — REUSES the main Packetflow site's Odoo integration (brief §2,
  * odoo/README.md): POST multipart/form-data to {PUBLIC_ODOO_URL}/website/form/crm.lead
  * to create a crm.lead. No separate lead pipeline, no KV/D1 lead table.
  *

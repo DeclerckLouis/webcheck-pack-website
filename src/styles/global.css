@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
- * Brand tokens — mirrored from the main PacketFlow site (see scripts/og-image.mjs).
+ * Brand tokens — mirrored from the main Packetflow site (see scripts/og-image.mjs).
  * These are PLACEHOLDERS that match the current brand; when Louis supplies the
  * canonical design tokens (brief §4), swap the values here in one place and the
  * whole UI follows. Nothing below hardcodes a hex outside this block.
@@ -18,8 +18,8 @@
   --color-line: #e2dccf;
 
   /* Brand */
-  --color-brand: #0a4daa; /* PacketFlow blue */
-  --color-accent: #f37f21; /* PacketFlow orange */
+  --color-brand: #0a4daa; /* Packetflow blue */
+  --color-accent: #f37f21; /* Packetflow orange */
   --color-accent-deep: #c2410c;
 
   /* Traffic light — tuned for AA contrast on the cream surface */
@@ -29,6 +29,151 @@
   --color-score-green-soft: #dcfce7;
   --color-score-orange-soft: #fef3c7;
   --color-score-red-soft: #fee2e2;
+}
+
+/*
+ * Main Packetflow design tokens — mirrored from the main site's global.css so
+ * the shared Header/Footer components render identically. These live alongside
+ * the Tailwind @theme above (different variable names, no collision); the scan
+ * page body uses the --color-* set, the shared chrome uses these.
+ */
+:root {
+  /* Blue */
+  --blue-900: #062e66;
+  --blue-800: #083c85;
+  --blue-700: #0a4daa;
+  --blue-600: #1a5dbd;
+  --blue-500: #2f72d0;
+  --blue-300: #8fb4e6;
+  --blue-100: #dce8f7;
+  --blue-50: #eef4fc;
+  /* Orange */
+  --orange-700: #c2410c;
+  --orange-600: #e2620f;
+  --orange-500: #f37f21;
+  --orange-300: #f8ae6e;
+  --orange-100: #fce6d2;
+  --orange-50: #fdf3ea;
+  /* Warm neutrals */
+  --ink: #1a1815;
+  --ink-soft: #2e2a24;
+  --grey-700: #4a453d;
+  --grey-600: #6b6359;
+  --grey-500: #8a8278;
+  --grey-400: #a8a097;
+  --grey-300: #c9c2b6;
+  --grey-200: #e4ded3;
+  --grey-100: #efeae0;
+  --cream: #f5f1ea;
+  --cream-deep: #ede7db;
+  --paper: #fbf9f4;
+  --white: #ffffff;
+
+  /* Semantic aliases */
+  --surface-page: var(--cream);
+  --surface-card: var(--paper);
+  --surface-raised: var(--white);
+  --surface-sunken: var(--cream-deep);
+  --text-strong: var(--ink);
+  --text-body: var(--grey-700);
+  --text-muted: var(--grey-600);
+  --text-faint: var(--grey-400);
+  --text-on-brand: var(--white);
+  --border-soft: var(--grey-200);
+  --border-strong: var(--grey-300);
+  --rule-accent: var(--orange-500);
+  --accent: var(--blue-700);
+  --accent-press: var(--blue-800);
+  --primary: var(--orange-600);
+  --primary-hover: var(--orange-500);
+  --primary-press: var(--orange-700);
+
+  /* Weights & type scale */
+  --fw-light: 300;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --text-2xs: 0.6875rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.125rem;
+  --text-lg: 1.375rem;
+  --leading-relaxed: 1.7;
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --space-9: 6rem;
+  --space-10: 8rem;
+
+  /* Radii */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgba(26, 24, 21, 0.06);
+  --shadow-sm: 0 1px 3px rgba(26, 24, 21, 0.08), 0 1px 2px rgba(26, 24, 21, 0.04);
+  --shadow-md: 0 4px 12px rgba(26, 24, 21, 0.08), 0 2px 4px rgba(26, 24, 21, 0.05);
+  --shadow-lg: 0 12px 28px rgba(26, 24, 21, 0.12), 0 4px 8px rgba(26, 24, 21, 0.06);
+
+  /* Layout */
+  --container-sm: 640px;
+  --container-md: 880px;
+  --container-lg: 1120px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+}
+
+/* Shared container (used by the ported Footer). Unlayered, so it wins over
+   Tailwind's layered .container utility. */
+.container {
+  max-width: var(--container-lg);
+  margin: 0 auto;
+  padding-inline: var(--space-5);
+  width: 100%;
+}
+
+/* Shared helpers from the main site's design system (used by the 404 page). */
+.section {
+  padding-block: var(--space-9);
+}
+.lead {
+  font-size: var(--text-md);
+  line-height: var(--leading-relaxed);
+  color: var(--text-body);
+}
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-sans);
+  font-size: var(--text-2xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.kicker::before {
+  content: "";
+  width: 24px;
+  height: 2px;
+  background: var(--rule-accent);
+  flex: none;
 }
 
 /* Fonts are self-hostable later; for now load from Google Fonts in the layout. */

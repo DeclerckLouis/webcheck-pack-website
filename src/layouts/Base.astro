@@ -1,5 +1,7 @@
 ---
 import "../styles/global.css";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
 
 interface Props {
   title?: string;
@@ -7,14 +9,51 @@ interface Props {
 }
 
 const {
-  title = "Domeinscan — controleer de gezondheid van uw domein | PacketFlow",
+  title = "Domeinscan — controleer de gezondheid van uw domein | Packetflow",
   description =
     "Gratis check van uw domein: SPF, DMARC, DKIM, DNSSEC, mail, blacklists en meer. Krijg in enkele seconden een score van 0 tot 100.",
 } = Astro.props;
 
-const base = import.meta.env.BASE_URL; // "/" on Cloudflare, "/<repo>/" on Pages staging
+const base = import.meta.env.BASE_URL;
 const canonical = new URL(Astro.url.pathname, Astro.site).toString();
 const ogImage = new URL(`${base}images/og-image.png`, Astro.site).toString();
+
+// Structured data (comment: feeds the GEO/AI-visibility effort). Mirrors the
+// main site's Packetflow business details; the tool itself is a WebApplication.
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebApplication",
+      name: "Domeinscan",
+      url: canonical,
+      applicationCategory: "SecurityApplication",
+      operatingSystem: "Web",
+      inLanguage: "nl-BE",
+      description,
+      offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
+      provider: { "@id": "https://www.packetflow.be/#business" },
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://www.packetflow.be/#business",
+      name: "Packetflow",
+      url: "https://www.packetflow.be",
+      logo: "https://www.packetflow.be/images/og-image.png",
+      email: "louis@packetflow.be",
+      telephone: "+32 468 22 72 12",
+      vatID: "BE 1024.713.047",
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: "Hageweg 39",
+        postalCode: "8490",
+        addressLocality: "Jabbeke",
+        addressRegion: "West-Vlaanderen",
+        addressCountry: "BE",
+      },
+    },
+  ],
+};
 ---
 
 <!doctype html>
@@ -28,10 +67,18 @@ const ogImage = new URL(`${base}images/og-image.png`, Astro.site).toString();
     <link rel="canonical" href={canonical} />
 
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Packetflow" />
+    <meta property="og:locale" content="nl_BE" />
+    <meta property="og:url" content={canonical} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={ogImage} />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -43,50 +90,12 @@ const ogImage = new URL(`${base}images/og-image.png`, Astro.site).toString();
   <body class="min-h-dvh flex flex-col" data-api-base={base}>
     <a href="#main" class="skip-link">Naar de inhoud</a>
 
-    <header class="w-full">
-      <div class="mx-auto max-w-5xl px-5 py-5 flex items-center gap-3">
-        <svg viewBox="10 10 30 30" width="34" height="34" aria-hidden="true">
-          <path
-            d="M 10 10 L 10 40 L 25 40 L 25 25 C 25 16.7 31.7 10 40 10 L 10 10 Z"
-            fill="var(--color-brand)"
-          />
-          <path
-            d="M 40 40 L 25 40 L 25 25 C 25 33.3 31.7 40 40 40 Z"
-            fill="var(--color-accent)"
-          />
-        </svg>
-        <span class="font-semibold tracking-tight text-lg">PacketFlow</span>
-        <span class="text-[color:var(--color-muted)] text-sm hidden sm:inline"
-          >· Domeinscan</span
-        >
-      </div>
-    </header>
+    <Header />
 
     <main id="main" class="flex-1 w-full">
       <slot />
     </main>
 
-    <footer
-      class="w-full border-t border-[color:var(--color-line)] mt-16"
-    >
-      <div
-        class="mx-auto max-w-5xl px-5 py-8 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between text-sm text-[color:var(--color-muted)]"
-      >
-        <p>© {new Date().getFullYear()} PacketFlow — uw lokale IT-partner.</p>
-        <nav class="flex gap-4">
-          <a class="hover:text-[color:var(--color-brand)]" href="https://www.packetflow.be"
-            >Hoofdsite</a
-          >
-          <a
-            class="hover:text-[color:var(--color-brand)]"
-            href="https://www.packetflow.be/privacy">Privacy</a
-          >
-          <a
-            class="hover:text-[color:var(--color-brand)]"
-            href="https://www.packetflow.be/contact">Contact</a
-          >
-        </nav>
-      </div>
-    </footer>
+    <Footer />
   </body>
 </html>
