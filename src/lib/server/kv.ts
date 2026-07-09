@@ -8,8 +8,16 @@
 import { CACHE_TTL_SECONDS, RATE_LIMIT, type Mode } from "../../config/scoring";
 import type { FullResult } from "../types";
 
-const resultKey = (mode: Mode, domain: string) => `result:${mode}:${domain}`;
-const checkKey = (checkId: string) => `check:${checkId}`;
+// Bump when the check logic changes in a way that should invalidate cached
+// results. The version is part of the cache key, so old entries are simply
+// never read again (they expire on their own TTL) instead of masking a fix for
+// up to CACHE_TTL_SECONDS. v2: blacklist now checks mail-server IPs, not the
+// domain's (CDN-fronted) A record.
+const CACHE_VERSION = "v2";
+
+const resultKey = (mode: Mode, domain: string) =>
+  `result:${CACHE_VERSION}:${mode}:${domain}`;
+const checkKey = (checkId: string) => `check:${CACHE_VERSION}:${checkId}`;
 
 /** Look up a previously computed result for this domain+mode. */
 export async function getCachedResult(

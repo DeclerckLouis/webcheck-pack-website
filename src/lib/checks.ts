@@ -170,6 +170,25 @@ function mxHostsFrom(answers: DohAnswer[]): string[] {
     .filter(Boolean);
 }
 
+/**
+ * Resolve the IPv4 addresses of a domain's mail servers (MX → A). Deduplicated
+ * and capped so a domain with many MX hosts can't blow the Worker subrequest
+ * budget. Used by the blacklist check, which must judge mail-server IPs rather
+ * than the domain's (possibly CDN-fronted) website A record.
+ */
+async function resolveMailIps(domain: string): Promise<string[]> {
+  const mx = await dohQuery(domain, "MX");
+  const hosts = mxHostsFrom(mx.answers).slice(0, 4);
+  const ips: string[] = [];
+  for (const host of hosts) {
+    const a = await dohQuery(host, "A");
+    for (const ans of a.answers) {
+      if (!ips.includes(ans.data)) ips.push(ans.data);
+    }
+  }
+  return ips;
+}
+
 export async function checkMx(domain: string): Promise<CheckOutcome> {
   const max = points("mx");
   const { answers } = await dohQuery(domain, "MX");
@@ -214,38 +233,48 @@ export async function checkMx(domain: string): Promise<CheckOutcome> {
 // --- Blacklist status ------------------------------------------------------
 export async function checkBlacklist(domain: string): Promise<CheckOutcome> {
   const max = points("blacklist");
-  const a = await dohQuery(domain, "A");
-  const ip = a.answers[0]?.data;
+
+  // Email blacklists judge the *sending mail server's* IP, so IP-based RBLs must
+  // be run against the IPs behind the domain's MX records — NOT the domain's own
+  // A record. For a domain whose website sits behind a CDN/proxy (e.g.
+  // Cloudflare), that A record is a shared IP that has nothing to do with email
+  // and is itself frequently listed, which would falsely mark the domain as
+  // blacklisted. Domain-based lists (DBL) are still queried against the domain.
+  const mailIps = await resolveMailIps(domain);
 
   const listings: string[] = [];
   let couldCheck = false; // got at least one definitive listed/not-listed answer
   let refusedAny = false; // at least one RBL refused (e.g. Spamhaus via public DoH)
 
   for (const rbl of RBLS) {
-    let query: string | null = null;
+    // IP RBLs fan out over every mail-server IP; domain RBLs hit the domain once.
+    const queries: string[] = [];
     if (rbl.kind === "ip") {
-      if (!ip) continue; // no A record → can't do IP-based RBLs
-      const rev = reverseIpv4(ip);
-      if (!rev) continue;
-      query = `${rev}.${rbl.zone}`;
+      for (const ip of mailIps) {
+        const rev = reverseIpv4(ip);
+        if (rev) queries.push(`${rev}.${rbl.zone}`);
+      }
     } else {
-      query = `${domain}.${rbl.zone}`;
+      queries.push(`${domain}.${rbl.zone}`);
     }
-    const res = await dohQuery(query, "A");
-    // Read the RBL return code, not just "an answer exists": the 127.255.255.x
-    // range is a status/refusal code (Spamhaus returns it for queries via public
-    // resolvers), NOT a real listing. See classifyRblAnswer.
-    switch (classifyRblAnswer(res.answers.map((ans) => ans.data))) {
-      case "listed":
-        listings.push(rbl.label);
-        couldCheck = true;
-        break;
-      case "refused":
-        refusedAny = true;
-        break;
-      case "clean":
-        if (res.status === 0 || res.status === 3) couldCheck = true;
-        break;
+
+    for (const query of queries) {
+      const res = await dohQuery(query, "A");
+      // Read the RBL return code, not just "an answer exists": the 127.255.255.x
+      // range is a status/refusal code (Spamhaus returns it for queries via public
+      // resolvers), NOT a real listing. See classifyRblAnswer.
+      switch (classifyRblAnswer(res.answers.map((ans) => ans.data))) {
+        case "listed":
+          if (!listings.includes(rbl.label)) listings.push(rbl.label);
+          couldCheck = true;
+          break;
+        case "refused":
+          refusedAny = true;
+          break;
+        case "clean":
+          if (res.status === 0 || res.status === 3) couldCheck = true;
+          break;
+      }
     }
   }
 

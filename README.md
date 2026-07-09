@@ -105,8 +105,19 @@ Cloudflare Pages:
    resolving to Cloudflare. It serves the **production** deployment, which is
    published on push to `main` (i.e. once this PR is merged); until then it
    returns Cloudflare's "Deployment Not Found".
-5. *(Optional)* Turnstile: set `PUBLIC_TURNSTILE_SITEKEY` + `TURNSTILE_SECRET`
-   (leave empty to keep it disabled — the hook is already wired in).
+5. *(Optional)* Turnstile — the two keys live in **different** places, and
+   neither is a GitHub *repo* secret that the running app reads directly:
+   - `PUBLIC_TURNSTILE_SITEKEY` is inlined into the browser bundle at **build
+     time**, so it must be set in GitHub, not Cloudflare — a Cloudflare runtime
+     var can't reach the prerendered page. It's public (it ships in the HTML), so
+     add it as a **repository Variable** (Settings → Secrets and variables →
+     Actions → *Variables* tab → New repository variable). The Build step reads
+     `vars.PUBLIC_TURNSTILE_SITEKEY`.
+   - `TURNSTILE_SECRET` is read by the Worker at **runtime**, so add it as an
+     **encrypted variable in the Cloudflare Pages project** (Settings → Variables
+     and Secrets). A GitHub repo secret never reaches the Worker.
+   Leave both empty to keep Turnstile disabled. Set **both** to enable it —
+   setting only the secret makes every scan fail verification.
 
 ## Known limitations (v1, by design)
 

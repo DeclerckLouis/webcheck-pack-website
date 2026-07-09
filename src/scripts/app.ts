@@ -67,6 +67,24 @@ function setError(el: HTMLElement | null, msg: string) {
   if (el) el.textContent = msg;
 }
 
+// Cloudflare Turnstile (optional — only present when the widget is rendered).
+declare const turnstile:
+  | { getResponse: (id?: string) => string | undefined; reset: (id?: string) => void }
+  | undefined;
+
+/** Read the current Turnstile token, or undefined when the widget isn't used. */
+function turnstileToken(): string | undefined {
+  const input = document.querySelector<HTMLInputElement>(
+    'input[name="cf-turnstile-response"]',
+  );
+  return input?.value || undefined;
+}
+
+/** Tokens are single-use, so refresh the widget after every submit. */
+function resetTurnstile() {
+  if (typeof turnstile !== "undefined") turnstile.reset();
+}
+
 function drawRing(total: number, max: number, color: Light) {
   const arc = $("score-arc") as unknown as SVGCircleElement | null;
   if (!arc) return;
@@ -197,7 +215,7 @@ async function runScan(domain: string) {
     const res = await fetch(api("api/check"), {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ domain, mode: "general" }),
+      body: JSON.stringify({ domain, mode: "general", turnstileToken: turnstileToken() }),
     });
     const data = (await res.json()) as Summary & { error?: string };
     if (!res.ok) {
@@ -211,6 +229,7 @@ async function runScan(domain: string) {
   } finally {
     show("loading", false);
     if (submit) submit.disabled = false;
+    resetTurnstile();
   }
 }
 

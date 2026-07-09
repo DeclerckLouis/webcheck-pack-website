@@ -1,5 +1,12 @@
 ---
 import Base from "../layouts/Base.astro";
+
+// Cloudflare Turnstile is optional: the widget only renders when a public
+// sitekey is configured at BUILD time (import.meta.env — this page is
+// prerendered, so the Cloudflare runtime env is not available here). Pair it
+// with the TURNSTILE_SECRET set in the Cloudflare Pages project for the server
+// to verify tokens; without both the scan runs with no bot check.
+const turnstileSitekey = import.meta.env.PUBLIC_TURNSTILE_SITEKEY;
 ---
 
 <Base>
@@ -61,6 +68,17 @@ import Base from "../layouts/Base.astro";
           Controleer
         </button>
       </div>
+      {
+        turnstileSitekey && (
+          <div class="mt-3 flex justify-center">
+            <div
+              class="cf-turnstile"
+              data-sitekey={turnstileSitekey}
+              data-appearance="interaction-only"
+            />
+          </div>
+        )
+      }
       <p id="form-error" class="mt-2 text-sm text-[color:var(--color-score-red)] min-h-5" role="alert"></p>
     </form>
 
@@ -173,5 +191,14 @@ import Base from "../layouts/Base.astro";
     </button>
   </section>
 
+  {
+    turnstileSitekey && (
+      <script
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+        async
+        defer
+      />
+    )
+  }
   <script src="../scripts/app.ts"></script>
 </Base>
