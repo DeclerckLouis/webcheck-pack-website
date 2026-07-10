@@ -2,17 +2,19 @@
 # Docs: https://developers.cloudflare.com/pages/configuration/headers/
 #
 # CSP notes:
-#   - script-src 'self'      the hydrated app bundle is served from our origin
-#                            (/_astro/*). JSON-LD (<script type="application/ld+json">)
-#                            is a data block, not executed, so CSP does not gate it.
-#   - style-src 'unsafe-inline'  the client injects style="..." via innerHTML and
-#                            the Google Fonts stylesheet is loaded cross-origin.
-#   - connect-src 'self'     the browser only calls same-origin /api/*; the DoH,
-#                            RDAP and Odoo calls all happen server-side.
-#   If Turnstile is enabled later, add https://challenges.cloudflare.com to
-#   script-src and a `frame-src https://challenges.cloudflare.com` directive.
+#   - script-src includes https://challenges.cloudflare.com so the Turnstile
+#     loader (turnstile/v0/api.js) can load, and 'unsafe-inline' because
+#     Turnstile's loader injects inline <script> elements at runtime that a
+#     static (prerendered) page can't nonce or hash reliably. Our own app code
+#     is an external module under /_astro/* and is covered by 'self'. JSON-LD
+#     (<script type="application/ld+json">) is a data block, not executed.
+#   - frame-src https://challenges.cloudflare.com lets the widget iframe render.
+#   - connect-src includes https://challenges.cloudflare.com for the loader's
+#     telemetry/verification calls; the app itself only calls same-origin /api/*.
+#   - style-src 'unsafe-inline' covers style="..." injected via innerHTML and the
+#     cross-origin Google Fonts stylesheet.
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
