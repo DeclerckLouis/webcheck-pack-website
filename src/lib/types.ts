@@ -1,6 +1,6 @@
 import type { CategoryId, Mode } from "../config/scoring";
 
-export type TrafficLight = "green" | "orange" | "red";
+export type TrafficLight = "green" | "orange" | "red" | "grey";
 
 /** One category's outcome. `detail`/`records` are only shown after unlock. */
 export interface CategoryResult {
@@ -17,6 +17,12 @@ export interface CategoryResult {
   records?: string[];
   /** True when the result is best-effort / may be a false negative (e.g. DKIM). */
   caveat?: string;
+  /**
+   * True when this category could not be checked reliably (e.g. blacklists that
+   * refuse queries via public resolvers). Rendered neutral/grey, never red, and
+   * excluded from the score denominator so the tool never invents or docks points.
+   */
+  notChecked?: boolean;
 }
 
 /** The teaser (pre-unlock): numbers + colors only, no explanations. */
@@ -32,6 +38,7 @@ export interface PublicSummary {
     score: number;
     max: number;
     color: TrafficLight;
+    notChecked?: boolean;
   }[];
   checkId: string;
   cached: boolean;

@@ -22,6 +22,10 @@ export interface LeadInput {
   score: number;
   max: number;
   generatedAt: string;
+  /** GDPR consent given at the gate (brief §3). Always true when a lead is created. */
+  consent: boolean;
+  /** ISO timestamp of when consent was given. */
+  consentAt: string;
 }
 
 export async function forwardLead(
@@ -35,6 +39,9 @@ export async function forwardLead(
     `Domein: ${lead.domain}`,
     `Score: ${lead.score}/${lead.max}`,
     `Uitgevoerd: ${lead.generatedAt}`,
+    // GDPR: record that consent was given and when, so the lawful basis for
+    // contacting this lead is auditable from the CRM record itself (brief §3).
+    `Toestemming: ${lead.consent ? "ja" : "nee"} (${lead.consentAt})`,
   ].join("\n");
   const description = `Aanvraag volledig rapport.\n\n${context}`;
 

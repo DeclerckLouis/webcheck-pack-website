@@ -8,3 +8,8 @@ PUBLIC_ODOO_URL="https://louisdeclerck.odoo.com"
 # Cloudflare Turnstile (optional). Leave both empty to keep Turnstile disabled.
 # PUBLIC_TURNSTILE_SITEKEY=""
 # TURNSTILE_SECRET=""
+
+# Spamhaus Data Query Service key (optional). When set, blacklist lookups query
+# the keyed DQS zones and work through DoH; when unset, the blacklist category
+# degrades to "niet gecontroleerd" instead of showing a false result.
+# SPAMHAUS_DQS_KEY=""

@@ -30,6 +30,8 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     telefoon?: string;
     bedrijf?: string;
     turnstileToken?: string;
+    consent?: boolean;
+    consentAt?: string;
   };
   try {
     payload = await request.json();
@@ -42,6 +44,20 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   if (!naam) return json({ error: "Vul uw naam in." }, 400);
   if (!EMAIL_RE.test(email)) return json({ error: "Vul een geldig e-mailadres in." }, 400);
   if (!payload.checkId) return json({ error: "Ontbrekende controle-referentie." }, 400);
+
+  // GDPR: never create a lead without explicit consent. Enforced server-side so
+  // the check can't be bypassed by scripting past the client checkbox (brief §3).
+  if (payload.consent !== true) {
+    return json(
+      { error: "U moet akkoord gaan met de verwerking van uw gegevens om het rapport te ontvangen." },
+      400,
+    );
+  }
+  // Trust a client timestamp only when it's a valid ISO date; otherwise stamp now.
+  const consentAt =
+    typeof payload.consentAt === "string" && !Number.isNaN(Date.parse(payload.consentAt))
+      ? payload.consentAt
+      : new Date().toISOString();
 
   const ip = request.headers.get("cf-connecting-ip") ?? clientAddress ?? "";
 
@@ -81,6 +97,8 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     score: full.total,
     max: full.max,
     generatedAt: full.generatedAt,
+    consent: true,
+    consentAt,
   });
   if (!lead.ok) {
     console.error("Odoo lead forward failed:", lead.error);

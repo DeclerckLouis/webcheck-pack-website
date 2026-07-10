@@ -86,3 +86,28 @@ export function classifyRblAnswer(ips: string[]): RblVerdict {
   if (ips.some(isError)) return "refused";
   return "clean";
 }
+
+export type RblResponse = "listed" | "clean" | "blocked";
+
+/**
+ * Classify a full RBL DoH response — the three response classes the tool must
+ * tell apart (brief §1):
+ *   - NXDOMAIN (status 3) → not listed → "clean" (the healthy case)
+ *   - NOERROR (status 0) with a real 127.0.0.x listing code → "listed"
+ *   - NOERROR with a 127.255.255.x status code (Spamhaus via public resolver) →
+ *     "blocked" (couldn't check)
+ *   - anything else (SERVFAIL 2, network/timeout status < 0) → "blocked"
+ *
+ * `status` is the DNS RCODE; `ips` are the A-record answers. Kept pure so the
+ * three classes are unit-tested directly.
+ */
+export function classifyRblResponse(status: number, ips: string[]): RblResponse {
+  if (status === 3) return "clean"; // NXDOMAIN — not listed
+  if (status === 0) {
+    const verdict = classifyRblAnswer(ips);
+    if (verdict === "listed") return "listed";
+    if (verdict === "refused") return "blocked";
+    return "clean"; // NOERROR/NODATA — treat as not listed
+  }
+  return "blocked"; // SERVFAIL / network error / timeout — couldn't check
+}
