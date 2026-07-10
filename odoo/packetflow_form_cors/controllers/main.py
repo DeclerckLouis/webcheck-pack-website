@@ -11,12 +11,14 @@ class WebsiteFormCors(WebsiteForm):
     site read the response of its cross-origin POST.
 
     The override keeps the parent's URL and other options; we only add ``cors``.
-    Use a single origin (e.g. ``"https://www.packetflow.be"``) to lock it down,
-    or ``"*"`` to allow any origin — fine here since the endpoint is public,
-    POST-only and does not use cookies/credentials.
+    Locked to a single origin (the main Packetflow site) rather than ``"*"``:
+    the override applies to *all* website_form models, so a wildcard would let
+    any site on the internet drive this Odoo instance's forms from a visitor's
+    browser. The scan site forwards leads server-side (no browser CORS), so the
+    only origin that still needs a browser-side POST is the main site.
     """
 
-    _cors = "*"
+    _cors = "https://www.packetflow.be"
 
     @http.route(cors=_cors)
     def website_form(self, model_name, **kwargs):
