@@ -1,27 +1,16 @@
 /**
- * CyFun Basic zelfevaluatie — client island (brief). A five-step state machine,
- * ported from the reference prototype:
+ * "Cyberveilig in 2 minuten" — client island (brief + Louis' feedback: keep it
+ * short, light and understandable, not a 34-question exam). A four-step flow:
  *
- *   domein → toepassingsgebied (scope) → domeinscan → vragenlijst → resultaat
+ *   domein → domeinscan → korte check (7 vragen, één scroll) → resultaat
  *
  * Vanilla TS, no framework, all state in memory (no localStorage/sessionStorage).
- * Two integration points are wired to the real backend:
+ * Two integration points reuse the real backend:
  *   [A] the domeinscan reuses the existing scan Worker (POST /api/check);
  *   [B] the lead gate posts to /api/cyfun-lead → the shared Odoo crm.lead flow.
  */
-import {
-  MODEL,
-  SECTORS,
-  SIZES,
-  KEY_TOTAL,
-  TOTAL_CONTROLS,
-} from "../config/cyfun";
-import {
-  classifyScope,
-  scoreAssessment,
-  type Answer,
-  type ScopeResult,
-} from "../lib/cyfun";
+import { QUESTIONS, SCOPE_CHOICES, TOTAL_QUESTIONS } from "../config/cyfun";
+import { classifyScope, scoreQuiz, type Answer, type ScopeResult } from "../lib/cyfun";
 import { resolvePartner } from "./partner";
 
 const API_BASE = document.body.dataset.apiBase || "/";
@@ -51,16 +40,16 @@ function resetTurnstile() {
   if (typeof turnstile !== "undefined") turnstile.reset();
 }
 
-// --- scan result shape (mapped from the Worker's category summary) -----------
+// --- scan result (mapped from the Worker's category summary) -----------------
 type ScanState = "pass" | "warn" | "fail" | "unknown";
 interface ScanResult {
   spf: ScanState;
   dmarc: ScanState;
   dnssec: ScanState;
   mx: ScanState;
-  /** SPF + DMARC both present (green/orange) → seed the PR.PS-05 pre-fill. */
-  mailAuthPresent: boolean;
-  /** False when the Worker call failed/timed out → answer the rows manually. */
+  /** SPF + DMARC both present → e-mail is protected against spoofing. */
+  mailProtected: boolean;
+  /** False when the Worker call failed/timed out. */
   reachable: boolean;
 }
 
@@ -71,10 +60,10 @@ interface SummaryCategory {
 }
 
 /**
- * [A] Domeinscan via the existing Worker. Maps the public category summary
- * (color per category) onto the four externally-observable CyFun rows. Never
- * throws: on any failure it returns `reachable:false` so the wizard continues
- * and the user answers the affected controls by hand (brief graceful degrade).
+ * [A] Domeinscan via the existing Worker. Maps the public category summary onto
+ * the four externally-observable rows. Never throws: on any failure it returns
+ * `reachable:false` so the flow continues (brief: graceful degradation; a
+ * Spamhaus error must never block).
  */
 async function runScan(domain: string): Promise<ScanResult> {
   const fail: ScanResult = {
@@ -82,22 +71,15 @@ async function runScan(domain: string): Promise<ScanResult> {
     dmarc: "unknown",
     dnssec: "unknown",
     mx: "unknown",
-    mailAuthPresent: false,
+    mailProtected: false,
     reachable: false,
   };
-
   const map = (c?: SummaryCategory): ScanState => {
     if (!c || c.notChecked || c.color === "grey") return "unknown";
     if (c.color === "green") return "pass";
     if (c.color === "orange") return "warn";
     return "fail";
   };
-  // "Present" = a record exists in some form (full or partial credit). We can't
-  // distinguish a weak-but-present DMARC (p=none, scores red) from a missing one
-  // with the public summary alone, so the pre-fill errs conservative — it only
-  // fires on green/orange, and it's always labelled "bevestig" either way.
-  const present = (c?: SummaryCategory) => !!c && (c.color === "green" || c.color === "orange");
-
   try {
     const res = await fetch(api("api/check"), {
       method: "POST",
@@ -113,7 +95,7 @@ async function runScan(domain: string): Promise<ScanResult> {
       dmarc: map(by.dmarc),
       dnssec: map(by.dnssec),
       mx: map(by.mx),
-      mailAuthPresent: present(by.spf) && present(by.dmarc),
+      mailProtected: map(by.spf) === "pass" && map(by.dmarc) === "pass",
       reachable: true,
     };
   } catch {
@@ -127,12 +109,18 @@ async function runScan(domain: string): Promise<ScanResult> {
 interface AppState {
   step: (typeof STEPS)[number];
   domain: string;
-  scope: ScopeResult | null;
   scan: ScanResult | null;
+  scope: ScopeResult;
   answers: Record<string, Answer>;
 }
-const STEPS = ["domein", "scope", "scan", "vragen", "resultaat"] as const;
-const S: AppState = { step: "domein", domain: "", scope: null, scan: null, answers: {} };
+const STEPS = ["domein", "scan", "check", "resultaat"] as const;
+const S: AppState = {
+  step: "domein",
+  domain: "",
+  scan: null,
+  scope: { choice: "", fit: true },
+  answers: {},
+};
 
 const app = document.getElementById("app")!;
 const packet = document.getElementById("packet")!;
@@ -157,9 +145,8 @@ function el(html: string): HTMLElement {
 function render() {
   paintPacket();
   if (S.step === "domein") return renderDomein();
-  if (S.step === "scope") return renderScope();
   if (S.step === "scan") return renderScan();
-  if (S.step === "vragen") return renderVragen();
+  if (S.step === "check") return renderCheck();
   return renderResultaat();
 }
 
@@ -168,16 +155,16 @@ function renderDomein() {
   app.replaceChildren(
     el(`
   <section class="card fade">
-    <p class="eyebrow">Gratis check · ± 6 minuten</p>
-    <h1>Hoe cyberweerbaar is uw organisatie?</h1>
-    <p class="lede">Deze zelfevaluatie loopt de 34 maatregelen van het CyberFundamentals-kader (niveau <b>Basic</b>) van het Centrum voor Cybersecurity België af, en scant uw domein op enkele objectieve beveiligingspunten. U krijgt meteen een score per domein — geen verplichting.</p>
+    <p class="eyebrow">Gratis · klaar in 2 minuten</p>
+    <h1>Hoe cyberveilig is uw zaak?</h1>
+    <p class="lede">Doe de snelle check. We scannen eerst uw domein, daarna stellen we zeven korte vragen in gewone taal. U krijgt meteen een duidelijk beeld en concrete tips — geen jargon, geen verplichting.</p>
     <div class="row">
       <label class="field" for="dom">Uw domeinnaam</label>
       <input type="text" id="dom" inputmode="url" placeholder="bedrijf.be" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(S.domain)}">
-      <p class="hint">We gebruiken dit voor de domeinscan. Zonder http:// of www.</p>
+      <p class="hint">Zonder http:// of www. — we gebruiken dit alleen voor de domeinscan.</p>
     </div>
-    <div class="actions"><button class="btn" id="next">Start de check</button></div>
-    <p class="disclaimer">Dit is een <b>indicatieve zelfevaluatie</b>, geen officiële CyFun-verificatie. Een erkend CyFun Basic-attest wordt afgeleverd door een geaccrediteerde instantie (CAB). De uitkomst geeft uw <i>startpositie</i> weer, niet uw verzekerbaarheid of conformiteit.</p>
+    <div class="actions"><button class="btn" id="next">Start de check →</button></div>
+    <p class="disclaimer">Dit is een <b>indicatieve zelfevaluatie</b> op basis van het CyberFundamentals-kader (niveau Basic) van het CCB — geen officiële CyFun-verificatie. De uitkomst toont uw <i>startpositie</i>, niet uw conformiteit of verzekerbaarheid. Een erkend attest komt van een geaccrediteerde instantie (CAB).</p>
   </section>`),
   );
   const inp = app.querySelector<HTMLInputElement>("#dom")!;
@@ -196,62 +183,9 @@ function renderDomein() {
       return;
     }
     S.domain = d;
-    go("scope");
+    go("scan");
   });
   inp.focus();
-}
-
-// --- step: scope triage ------------------------------------------------------
-function renderScope() {
-  app.replaceChildren(
-    el(`
-  <section class="card fade">
-    <p class="eyebrow">Stap 1 · Toepassingsgebied</p>
-    <h1>Moet ${esc(S.domain)} aan CyFun voldoen?</h1>
-    <p class="lede">De NIS2-wetgeving verplicht sommige organisaties tot een cybersecurity-kader. We bepalen indicatief of <b>Basic</b> voor u het juiste niveau is.</p>
-    <div class="row">
-      <label class="field" for="sector">In welke sector bent u actief?</label>
-      <select id="sector">${SECTORS.map((s) => `<option value="${s.v}">${s.t}</option>`).join("")}</select>
-    </div>
-    <div class="row">
-      <label class="field" for="size">Hoe groot is uw organisatie?</label>
-      <select id="size">${SIZES.map((s) => `<option value="${s.v}">${s.t}</option>`).join("")}</select>
-    </div>
-    <div class="row">
-      <label class="field checkline"><input type="checkbox" id="supply">Grotere klanten of partners vragen bewijs van uw beveiliging</label>
-      <p class="hint">Leveranciers van NIS2-bedrijven wordt aangeraden minstens CyFun Basic te halen.</p>
-    </div>
-    <div id="verdict"></div>
-    <div class="actions">
-      <button class="btn ghost" id="back">← Terug</button>
-      <button class="btn" id="check">Bepaal niveau</button>
-    </div>
-    <p class="disclaimer">Indicatief, niet de officiële CyFun Selection Tool. Bepaal uw exacte verplichting via de scope-test op <a href="https://www.safeonweb.be/nl/nis2" target="_blank" rel="noopener">safeonweb.be/nl/nis2</a>.</p>
-  </section>`),
-  );
-  app.querySelector<HTMLButtonElement>("#back")!.onclick = () => go("domein");
-  const vd = app.querySelector<HTMLElement>("#verdict")!;
-  app.querySelector<HTMLButtonElement>("#check")!.onclick = () => {
-    const sector = app.querySelector<HTMLSelectElement>("#sector")!.value;
-    const size = app.querySelector<HTMLSelectElement>("#size")!.value;
-    const supply = app.querySelector<HTMLInputElement>("#supply")!.checked;
-    const r = classifyScope(sector, size, supply);
-    S.scope = r;
-    if (!r.fit) {
-      vd.innerHTML = `<div class="verdict stop">
-        <h2>Waarschijnlijk een NIS2-${r.level === "Essential" ? "essentiële" : "belangrijke"} entiteit</h2>
-        <p>Dan geldt voor u het niveau <b>CyFun ${r.level === "Essential" ? "Essential" : "Important"}</b> (132–217 maatregelen) mét verificatie door een geaccrediteerde instantie. Dat valt buiten deze Basic-zelfevaluatie. PacketFlow richt zich op Basic — voor Important/Essential verwijzen we u graag door naar een gespecialiseerde partner.</p>
-      </div>
-      <div class="actions"><button class="btn secondary" id="cont">Toch de Basic-check bekijken →</button></div>`;
-      vd.querySelector<HTMLButtonElement>("#cont")!.onclick = () => go("scan");
-    } else {
-      vd.innerHTML = `<div class="verdict go">
-        <h2>CyFun Basic is voor u het juiste niveau</h2>
-        <p>${r.viaSupply ? "Als leverancier in een NIS2-keten is Basic sterk aangeraden. " : "U valt niet rechtstreeks onder de NIS2-verplichting, maar Basic is dé aangewezen startbasis. "}Deze check loopt de 34 Basic-maatregelen met u door.</p>
-      </div><div class="actions"><button class="btn" id="cont">Verder naar de domeinscan →</button></div>`;
-      vd.querySelector<HTMLButtonElement>("#cont")!.onclick = () => go("scan");
-    }
-  };
 }
 
 // --- step: domeinscan --------------------------------------------------------
@@ -259,175 +193,165 @@ function renderScan() {
   app.replaceChildren(
     el(`
   <section class="card fade">
-    <p class="eyebrow">Stap 2 · Domeinscan</p>
-    <h1>Objectieve controle van ${esc(S.domain)}</h1>
-    <p class="lede">Enkele CyFun-punten zijn van buitenaf meetbaar. De rest van het kader gaat over interne processen en beantwoordt u zelf in de volgende stap.</p>
-    <div id="scanbody"><p class="muted scanloading"><span class="spin" aria-hidden="true"></span> Domein wordt gescand…</p></div>
-    <div class="actions hidden" id="scanact"><button class="btn" id="toq">Verder naar de vragenlijst →</button></div>
-    <p class="disclaimer">De scan verifieert e-mailauthenticatie (SPF, DMARC), DNSSEC en mailconfiguratie. Blacklist- en DKIM-controles vergen extra context en gebeuren in het volledige rapport.</p>
+    <p class="eyebrow">Stap 1 · Domeinscan</p>
+    <h1>We kijken even naar ${esc(S.domain)}</h1>
+    <p class="lede">Enkele dingen kunnen we zelf al controleren, van buitenaf. De rest vragen we u zo meteen.</p>
+    <div id="scanbody"><p class="muted scanloading"><span class="spin" aria-hidden="true"></span> Even kijken…</p></div>
+    <div class="actions hidden" id="scanact"><button class="btn" id="toq">Verder naar de vragen →</button></div>
   </section>`),
   );
   runScan(S.domain).then((res) => {
     S.scan = res;
-    const rows: [string, string, keyof ScanResult, string][] = [
-      ["SPF", "PR.PS-05", "spf", "E-mailvervalsing tegengaan (afzenderbeleid)"],
-      ["DMARC", "PR.PS-05", "dmarc", "Beleid tegen phishing met uw domein"],
-      ["DNSSEC", "PR.IR-01", "dnssec", "Beveiliging van DNS-antwoorden"],
-      ["MX / mailconfiguratie", "ID.AM-02", "mx", "Aanwezigheid en opzet van mailservers"],
+    const rows: [string, keyof ScanResult, string][] = [
+      ["Bescherming tegen e-mailvervalsing", "spf", "Kan iemand mailen alsof hij u is? (SPF)"],
+      ["Beleid tegen vervalste e-mail", "dmarc", "Wat gebeurt er met nep-mail uit uw naam? (DMARC)"],
+      ["Beveiligde DNS", "dnssec", "Bescherming tegen omleiden van uw domein (DNSSEC)"],
+      ["E-mail correct ingesteld", "mx", "Wijzen uw mailservers goed? (MX)"],
     ];
     const pill = (v: ScanState) =>
       v === "pass"
         ? `<span class="pill ok">In orde</span>`
         : v === "warn"
-          ? `<span class="pill warn">Deels in orde</span>`
+          ? `<span class="pill warn">Kan beter</span>`
           : v === "fail"
-            ? `<span class="pill bad">Ontbreekt</span>`
+            ? `<span class="pill bad">Niet in orde</span>`
             : `<span class="pill na">Onbekend</span>`;
     const body = app.querySelector<HTMLElement>("#scanbody")!;
     body.innerHTML =
       (!res.reachable
-        ? `<p class="autofill">De domeinscan kon nu niet worden uitgevoerd. Geen probleem — u beantwoordt de betrokken punten gewoon zelf in de vragenlijst.</p>`
+        ? `<p class="autofill">De domeinscan lukte nu even niet — geen probleem, we gaan gewoon verder met de vragen.</p>`
         : "") +
       rows
         .map(
-          ([n, c, k, d]) =>
-            `<div class="scanrow"><div class="name">${n} <code>${c} · ${d}</code></div>${pill(res[k] as ScanState)}</div>`,
+          ([n, k, d]) =>
+            `<div class="scanrow"><div class="name">${n} <code>${d}</code></div>${pill(res[k] as ScanState)}</div>`,
         )
         .join("");
     app.querySelector<HTMLButtonElement>("#scanact")!.classList.remove("hidden");
-    app.querySelector<HTMLButtonElement>("#toq")!.onclick = () => go("vragen");
+    app.querySelector<HTMLButtonElement>("#toq")!.onclick = () => go("check");
   });
 }
 
-// --- step: vragenlijst -------------------------------------------------------
+// --- step: korte check (één scroll) -----------------------------------------
 function answeredCount() {
-  return Object.keys(S.answers).length;
+  return QUESTIONS.reduce((n, q) => n + (S.answers[q.id] ? 1 : 0), 0);
 }
 
-function renderVragen() {
-  // Pre-fill suggestion from the scan (confirm, don't assume): SPF + DMARC
-  // present → seed PR.PS-05 (web/e-mailfilters) as "Deels".
-  const scanMailOk = !!S.scan && S.scan.mailAuthPresent;
+function renderCheck() {
+  const opts = (
+    [
+      ["ja", "Ja"],
+      ["nee", "Nee"],
+      ["onbekend", "Weet ik niet"],
+    ] as const
+  );
+
+  const questionCards = QUESTIONS.map(
+    (q, i) => `
+    <div class="q" data-id="${q.id}">
+      <p class="qtext"><span class="qn">${i + 1}</span><span>${q.q}</span>${q.key ? '<span class="key">belangrijk</span>' : ""}</p>
+      <div class="opts">
+        ${opts.map(([v, t]) => `<label class="opt" data-v="${v}"><input type="radio" name="${q.id}" value="${v}"><span>${t}</span></label>`).join("")}
+      </div>
+      <p class="fb" id="fb-${q.id}" hidden></p>
+    </div>`,
+  ).join("");
 
   app.replaceChildren(
     el(`
   <section class="fade">
     <div class="card">
-      <p class="eyebrow">Stap 3 · Vragenlijst</p>
-      <h1>De 34 Basic-maatregelen</h1>
-      <p class="lede">Antwoord eerlijk — een “ja” die niet klopt, helpt u niet. <b>Sleutelmaatregelen</b> zijn verplicht op Basic-niveau en wegen zwaarder.</p>
-      <nav class="fn-nav" aria-label="Spring naar functie">
-        ${MODEL.map((f) => `<a href="#fn-${f.code}" class="fn-chip">${f.code} · ${f.label}</a>`).join("")}
-      </nav>
-      ${MODEL.map((f) => sectionFor(f)).join("")}
+      <p class="eyebrow">Stap 2 · De check</p>
+      <h1>Zeven korte vragen</h1>
+      <p class="lede">Antwoord gerust eerlijk — “weet ik niet” is ook een antwoord. U ziet meteen per vraag wat het betekent.</p>
+
+      <div class="scope">
+        <p class="scope-q">Even kort: wat past het best bij u?</p>
+        ${SCOPE_CHOICES.map((c) => `<label class="scope-opt"><input type="radio" name="scope" value="${c.v}"><span>${c.t}</span></label>`).join("")}
+      </div>
+
+      ${questionCards}
     </div>
     <div class="sticky">
       <div class="bar">
-        <span class="cnt"><b id="cnt">${answeredCount()}</b> / ${TOTAL_CONTROLS} beantwoord</span>
-        <button class="btn" id="result" disabled>Bekijk resultaat →</button>
+        <div class="meter"><div class="meter-fill" id="meter"></div></div>
+        <span class="cnt"><b id="cnt">0</b>/${TOTAL_QUESTIONS} beantwoord</span>
+        <button class="btn" id="result" disabled>Toon resultaat →</button>
       </div>
     </div>
   </section>`),
   );
 
-  // Register the pre-filled auto answers in state so they count and score.
-  if (scanMailOk) {
-    MODEL.flatMap((f) => f.controls).forEach((c) => {
-      if (c.scan === "mail") S.answers[c.id] = "deels";
+  const cnt = app.querySelector<HTMLElement>("#cnt")!;
+  const meter = app.querySelector<HTMLElement>("#meter")!;
+  const btn = app.querySelector<HTMLButtonElement>("#result")!;
+  const sync = () => {
+    const done = answeredCount();
+    cnt.textContent = String(done);
+    meter.style.width = `${Math.round((100 * done) / TOTAL_QUESTIONS)}%`;
+    btn.disabled = done < TOTAL_QUESTIONS;
+  };
+
+  // Per-question inline feedback (the "useful feedback" Louis missed).
+  for (const q of QUESTIONS) {
+    const fb = app.querySelector<HTMLElement>(`#fb-${q.id}`)!;
+    app.querySelectorAll<HTMLInputElement>(`input[name="${q.id}"]`).forEach((r) => {
+      r.addEventListener("change", () => {
+        S.answers[q.id] = r.value as Answer;
+        if (r.value === "ja") {
+          fb.textContent = `✓ ${q.yes}`;
+          fb.className = "fb good";
+        } else {
+          fb.textContent = `→ ${q.fix}`;
+          fb.className = "fb work";
+        }
+        fb.hidden = false;
+        sync();
+      });
     });
   }
 
-  const cnt = app.querySelector<HTMLElement>("#cnt")!;
-  const btn = app.querySelector<HTMLButtonElement>("#result")!;
-  const sync = () => {
-    cnt.textContent = String(answeredCount());
-    btn.disabled = answeredCount() < TOTAL_CONTROLS;
-  };
-  app.querySelectorAll<HTMLInputElement>('input[type=radio]').forEach((r) => {
-    r.addEventListener("change", (e) => {
-      const t = e.target as HTMLInputElement;
-      S.answers[t.name] = t.value as Answer;
-      sync();
+  app.querySelectorAll<HTMLInputElement>('input[name="scope"]').forEach((r) => {
+    r.addEventListener("change", () => {
+      S.scope = classifyScope(r.value);
     });
   });
+
   sync();
   btn.addEventListener("click", () => go("resultaat"));
 }
 
-/** Render one function's heading + its controls. */
-function sectionFor(f: (typeof MODEL)[number]): string {
-  const scanMailOk = !!S.scan && S.scan.mailAuthPresent;
-  return `
-    <div class="fn-head" id="fn-${f.code}"><span class="code">${f.code}</span><h2>${f.label}</h2></div>
-    <p class="fn-sub">${f.sub}</p>
-    ${f.controls
-      .map((c) => {
-        const auto = c.scan === "mail" && scanMailOk;
-        const opts = (
-          [
-            ["ja", "Ja"],
-            ["deels", "Deels"],
-            ["nee", "Nee"],
-            ["nvt", "N.v.t."],
-          ] as const
-        )
-          .map(
-            ([v, t]) =>
-              `<label class="opt" data-v="${v}"><input type="radio" name="${c.id}" value="${v}" ${auto && v === "deels" ? "checked" : ""}><span>${t}</span></label>`,
-          )
-          .join("");
-        return `<div class="q" data-id="${c.id}">
-        <p class="qtext">${c.key ? '<span class="key">sleutel</span>' : ""}<span>${c.q}</span></p>
-        <p class="qcode">${c.id}</p>
-        <p class="qhelp">${c.help}</p>
-        ${auto ? `<span class="autofill">Auto-gedetecteerd — SPF + DMARC aanwezig. Voorstel: “Deels”. Bevestig gerust.</span>` : ""}
-        <div class="opts">${opts}</div>
-      </div>`;
-      })
-      .join("")}
-  `;
-}
-
-// --- results -----------------------------------------------------------------
-const scoreColor = (p: number) => (p >= 80 ? "var(--ok)" : p >= 55 ? "var(--warn)" : "var(--bad)");
+// --- step: resultaat ---------------------------------------------------------
+const toneColor = (t: "good" | "ok" | "work") =>
+  t === "good" ? "var(--ok)" : t === "ok" ? "var(--warn)" : "var(--bad)";
 
 function renderResultaat() {
-  const r = scoreAssessment(S.answers);
-  const keyOk = r.keyMet === KEY_TOTAL;
-  let verdict: string;
-  if (!keyOk) {
-    verdict = `Nog niet Basic-klaar — ${KEY_TOTAL - r.keyMet} sleutelmaatregel(en) ontbreken.`;
-  } else if (r.overall >= 85) {
-    verdict = "Sterke basis. U zit dicht bij CyFun Basic-niveau.";
-  } else {
-    verdict = "Goede aanzet, met nog enkele werkpunten.";
-  }
+  const r = scoreQuiz(S.answers);
+  const canEngage = S.scope.fit;
 
-  const fnbars = MODEL.map((f) => {
-    const p = r.perFn[f.code].pct;
-    return `<div class="fnbar">
-      <div class="top"><span>${f.label} <code>${f.code}</code></span><span>${p === null ? "n.v.t." : p + "%"}</span></div>
-      <div class="track"><i style="width:${p || 0}%;background:${scoreColor(p || 0)}"></i></div>
-    </div>`;
-  }).join("");
-
-  const gapItems = r.gaps.length
-    ? r.gaps
+  const winItems = r.quickWins.length
+    ? r.quickWins
         .map(
-          (g) => `
-    <div class="gap">
-      <span class="mark ${g.a}"></span>
+          (w) => `
+    <div class="win">
+      <span class="mark ${w.a}"></span>
       <div>
-        <p class="g-t">${g.q}${g.key ? '<span class="key">sleutel</span>' : ""}</p>
-        <p class="g-c">${g.id} · ${g.fn}</p>
-        <p class="g-h">${g.help}</p>
+        <p class="w-t">${w.fix}${w.key ? '<span class="key">belangrijk</span>' : ""}</p>
       </div>
     </div>`,
         )
         .join("")
-    : `<p class="muted">Geen openstaande punten — knap resultaat.</p>`;
+    : `<p class="muted">Niets op te merken — knap werk. U staat er sterk voor.</p>`;
 
-  const canEngage = !!S.scope && S.scope.fit;
+  // A single friendly line tying the up-front scan to the result.
+  const scanLine =
+    S.scan && S.scan.reachable
+      ? `<p class="scan-note">${
+          S.scan.mailProtected
+            ? "➕ En uit onze scan: uw e-mail is goed beschermd tegen vervalsing."
+            : "➕ En uit onze scan: uw e-mail is nog niet volledig beschermd tegen vervalsing — ook dat pakken we mee."
+        }</p>`
+      : "";
 
   app.replaceChildren(
     el(`
@@ -435,42 +359,38 @@ function renderResultaat() {
     <div class="card">
       <p class="eyebrow">Resultaat · ${esc(S.domain)}</p>
       <div class="score-hero">
-        <div class="ring" style="--p:${r.overall};--rc:${scoreColor(r.overall)}"><b>${r.overall}<small>/100</small></b></div>
+        <div class="ring" style="--p:${r.score};--rc:${toneColor(r.tone)}"><b>${r.yesCount}<small>/${r.total}</small></b></div>
         <div class="txt">
-          <h1 style="margin-bottom:6px">${verdict}</h1>
-          <div class="keymeas ${keyOk ? "ok" : "bad"}">${keyOk ? "✓" : "!"} Sleutelmaatregelen: ${r.keyMet}/${KEY_TOTAL} volledig in orde</div>
+          <h1 style="margin-bottom:6px">${r.verdict}</h1>
+          <p class="score-sub">${r.yesCount} van ${r.total} basispunten op orde.</p>
+          ${scanLine}
         </div>
       </div>
     </div>
 
     <div class="card" style="margin-top:16px">
-      <h2>Overzicht per functie</h2>
-      <p class="fn-sub">De zes kernfuncties van het CyberFundamentals-kader.</p>
-      ${fnbars}
-    </div>
-
-    <div class="card" style="margin-top:16px">
-      <h2>Uw werkpunten (${r.gaps.length})</h2>
-      <p class="fn-sub">Gerangschikt op prioriteit — sleutelmaatregelen eerst.</p>
-      ${gapItems}
+      <h2>${r.quickWins.length ? `Uw snelle winsten (${r.quickWins.length})` : "Uw sterke punten"}</h2>
+      <p class="fn-sub">${r.quickWins.length ? "Concreet en haalbaar — begin gerust bovenaan." : "Geen openstaande punten gevonden."}</p>
+      ${winItems}
     </div>
 
     ${
       canEngage
         ? `
     <div class="gate">
-      <h2>Ontvang het volledige rapport + stappenplan</h2>
-      <p>We sturen u een gedetailleerd rapport met per werkpunt een concrete oplossing, plus een prioritair stappenplan richting CyFun Basic.</p>
+      <h2>Zin om deze punten weg te werken?</h2>
+      <p>Laat uw e-mail achter, dan sturen we u een korte actielijst op maat van uw resultaat — concreet en zonder verkooppraat. Wilt u het liever samen bekijken? Eén bericht en we plannen een kort gesprek.</p>
       <div class="row"><input type="email" id="lead" placeholder="naam@bedrijf.be" autocomplete="email"></div>
       <label class="consent"><input type="checkbox" id="consent">
-        Ik ga akkoord dat PacketFlow mijn e-mailadres gebruikt om mij dit rapport en gerelateerde informatie te bezorgen. Meer info in de <a href="https://www.packetflow.be/privacy" target="_blank" rel="noopener">privacyverklaring</a>.</label>
-      <div class="actions"><button class="btn" id="send" disabled>Stuur mijn rapport</button></div>
+        Ik ga akkoord dat PacketFlow mijn e-mailadres gebruikt om mij deze actielijst en gerelateerde info te bezorgen. Meer in de <a href="https://www.packetflow.be/privacy" target="_blank" rel="noopener">privacyverklaring</a>.</label>
+      <div class="actions"><button class="btn" id="send" disabled>Stuur mij mijn actielijst</button></div>
       <p id="leadmsg" class="gate-msg" role="status"></p>
     </div>`
         : `
     <div class="card" style="margin-top:16px">
-      <h2>Volgende stap</h2>
-      <p class="fn-sub">Op basis van uw toepassingsgebied heeft u een hoger niveau nodig dan Basic. Neem contact op met een op NIS2 Important/Essential gespecialiseerde partner voor een verificatietraject.</p>
+      <h2>Voor u ligt de lat wat hoger</h2>
+      <p class="fn-sub">U valt waarschijnlijk onder NIS2 als belangrijke of essentiële entiteit — dan geldt een hoger niveau dan Basic, met verificatie door een geaccrediteerde instantie. Deze snelle check blijft nuttig als nulmeting, maar voor uw traject verwijzen we u graag door naar een gespecialiseerde partner. Neem gerust contact op, dan zetten we u op weg.</p>
+      <div class="actions"><a class="btn" href="https://www.packetflow.be/contact" target="_blank" rel="noopener">Contacteer ons</a></div>
     </div>`
     }
 
@@ -482,7 +402,7 @@ function renderResultaat() {
   app.querySelector<HTMLButtonElement>("#restart")!.onclick = () => {
     S.answers = {};
     S.scan = null;
-    S.scope = null;
+    S.scope = { choice: "", fit: true };
     go("domein");
   };
 
@@ -500,12 +420,12 @@ function renderResultaat() {
         {
           domain: S.domain,
           email: email.value.trim(),
-          score: r.overall,
-          keyMet: r.keyMet,
-          keyTotal: KEY_TOTAL,
-          scopeLevel: S.scope?.level ?? "Basic",
-          scopeFit: S.scope?.fit ?? true,
-          gaps: r.gaps.map((g) => g.id),
+          score: r.score,
+          yesCount: r.yesCount,
+          total: r.total,
+          scopeChoice: S.scope.choice,
+          scopeFit: S.scope.fit,
+          gaps: r.quickWins.map((w) => w.cyfun),
           consent: true,
           consentAt: new Date().toISOString(),
           via: resolvePartner()?.slug,
@@ -522,9 +442,9 @@ interface LeadPayload {
   domain: string;
   email: string;
   score: number;
-  keyMet: number;
-  keyTotal: number;
-  scopeLevel: string;
+  yesCount: number;
+  total: number;
+  scopeChoice: string;
   scopeFit: boolean;
   gaps: string[];
   consent: boolean;
@@ -551,7 +471,7 @@ async function submitLead(payload: LeadPayload, msgEl: HTMLElement, btn: HTMLBut
       return;
     }
     if (data.leadStored === false) console.warn("CyFun lead not stored in Odoo:", data.leadError);
-    msgEl.textContent = `Bedankt — we sturen het rapport naar ${payload.email}.`;
+    msgEl.textContent = `Bedankt — we sturen uw actielijst naar ${payload.email}.`;
     btn.textContent = "Verzonden ✓";
   } catch {
     btn.disabled = false;

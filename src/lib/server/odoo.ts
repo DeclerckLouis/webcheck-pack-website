@@ -108,18 +108,18 @@ export async function forwardLead(
   });
 }
 
-/** Lead from the CyFun Basic zelfevaluatie (brief integration point B). */
+/** Lead from the short "Cyberveilig in 2 minuten" self-check (integration B). */
 export interface CyfunLeadInput {
   email: string;
   domain: string;
-  /** Overall CyFun Basic score, 0–100. */
+  /** Self-check score, 0–100. */
   score: number;
-  /** Key measures fully met, out of keyTotal. */
-  keyMet: number;
-  keyTotal: number;
-  /** Triage outcome level (Basic / Important / Essential). */
-  scopeLevel: string;
-  /** Control ids flagged as gaps (key measures first), for the follow-up report. */
+  /** Questions answered "Ja", out of total. */
+  yesCount: number;
+  total: number;
+  /** The scope-question choice (kmo / big-regulated / big-other, or ""). */
+  scopeChoice: string;
+  /** CyFun codes of the flagged quick wins, key measures first. */
   gaps: string[];
   /** GDPR consent (brief §3). Always true when a lead is created. */
   consent: boolean;
@@ -129,28 +129,27 @@ export interface CyfunLeadInput {
 }
 
 /**
- * Forward a CyFun Basic self-assessment lead to the SAME Odoo `crm.lead`
- * pipeline as the domain scan. The prototype only captures an e-mail at the
- * gate, so the e-mail doubles as the contact handle; the assessment context
- * (score, key measures, scope, gap ids) goes into the description.
+ * Forward a self-check lead to the SAME Odoo `crm.lead` pipeline as the domain
+ * scan. The check captures only an e-mail at the gate, so the e-mail doubles as
+ * the contact handle; the result context (score, quick wins, scope) goes into
+ * the description so the follow-up can be personalised.
  */
 export async function forwardCyfunLead(
   odooBaseUrl: string | undefined,
   lead: CyfunLeadInput,
 ): Promise<{ ok: boolean; id?: number; error?: string }> {
   const base = (odooBaseUrl || DEFAULT_ODOO_URL).replace(/\/$/, "");
-  const basisReady = lead.keyMet === lead.keyTotal;
 
   const context = [
-    "— CyFun Basic zelfevaluatie —",
+    "— Cyberveilig-check —",
     `Domein: ${lead.domain}`,
-    `Score: ${lead.score}/100`,
-    `Sleutelmaatregelen: ${lead.keyMet}/${lead.keyTotal} volledig in orde`,
-    `Basic-klaar: ${basisReady ? "ja" : "nog niet"}`,
-    `Toepassingsgebied: ${lead.scopeLevel}`,
+    `Score: ${lead.yesCount}/${lead.total} op orde (${lead.score}/100)`,
+    lead.scopeChoice ? `Profiel: ${lead.scopeChoice}` : "Profiel: niet opgegeven",
     // GDPR: auditable lawful basis, same posture as the domain-scan lead (§3).
     `Toestemming: ${lead.consent ? "ja" : "nee"} (${lead.consentAt})`,
-    lead.gaps.length ? `Werkpunten (${lead.gaps.length}): ${lead.gaps.join(", ")}` : "Geen openstaande werkpunten.",
+    lead.gaps.length
+      ? `Snelle winsten (${lead.gaps.length}): ${lead.gaps.join(", ")}`
+      : "Geen openstaande punten.",
     ...(lead.partnerSlug ? [`Partner: ${lead.partnerSlug}`] : []),
   ].join("\n");
 
@@ -158,8 +157,8 @@ export async function forwardCyfunLead(
     contact_name: lead.email,
     email_from: lead.email,
     partner_name: lead.domain,
-    description: `Aanvraag volledig CyFun Basic-rapport + stappenplan.\n\n${context}`,
-    name: `CyFun Basic-aanvraag — ${lead.domain}`,
+    description: `Aanvraag actielijst na cyberveilig-check.\n\n${context}`,
+    name: `Cyberveilig-check — ${lead.domain}`,
     referred: lead.partnerSlug,
   });
 }

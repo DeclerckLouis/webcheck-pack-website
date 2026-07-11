@@ -35,9 +35,9 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     domain?: string;
     email?: string;
     score?: number;
-    keyMet?: number;
-    keyTotal?: number;
-    scopeLevel?: string;
+    yesCount?: number;
+    total?: number;
+    scopeChoice?: string;
     scopeFit?: boolean;
     gaps?: unknown;
     consent?: boolean;
@@ -80,10 +80,10 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
       ? payload.consentAt
       : new Date().toISOString();
 
-  // Sanitise the numeric/array assessment context defensively (client-supplied).
+  // Sanitise the numeric/array result context defensively (client-supplied).
   const clamp = (n: unknown, lo: number, hi: number) =>
     typeof n === "number" && Number.isFinite(n) ? Math.min(hi, Math.max(lo, Math.round(n))) : 0;
-  const keyTotal = clamp(payload.keyTotal, 0, 100) || 13;
+  const total = clamp(payload.total, 0, 100) || 7;
   const gaps = Array.isArray(payload.gaps)
     ? payload.gaps.filter((g): g is string => typeof g === "string").map((g) => capped(g)).slice(0, 40)
     : [];
@@ -110,9 +110,9 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     email,
     domain,
     score: clamp(payload.score, 0, 100),
-    keyMet: clamp(payload.keyMet, 0, keyTotal),
-    keyTotal,
-    scopeLevel: capped(payload.scopeLevel) || "Basic",
+    yesCount: clamp(payload.yesCount, 0, total),
+    total,
+    scopeChoice: capped(payload.scopeChoice),
     gaps,
     consent: true,
     consentAt,
