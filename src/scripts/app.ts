@@ -7,7 +7,7 @@
  * full report from cache (no re-run — brief §7). Vanilla TS, no framework, so the
  * results view stays snappy on a phone at a networking breakfast (brief §7).
  */
-type Light = "green" | "orange" | "red";
+type Light = "green" | "orange" | "red" | "grey";
 
 interface SummaryCategory {
   id: string;
@@ -15,6 +15,8 @@ interface SummaryCategory {
   score: number;
   max: number;
   color: Light;
+  /** Category couldn't be checked — render neutral, excluded from the score. */
+  notChecked?: boolean;
 }
 interface Summary {
   domain: string;
@@ -31,6 +33,7 @@ interface ReportCategory extends SummaryCategory {
   detail: string;
   records?: string[];
   caveat?: string;
+  notChecked?: boolean;
 }
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) =>
@@ -43,11 +46,13 @@ const COLOR_VAR: Record<Light, string> = {
   green: "var(--color-score-green)",
   orange: "var(--color-score-orange)",
   red: "var(--color-score-red)",
+  grey: "var(--color-muted)",
 };
 const COLOR_SOFT: Record<Light, string> = {
   green: "var(--color-score-green-soft)",
   orange: "var(--color-score-orange-soft)",
   red: "var(--color-score-red-soft)",
+  grey: "var(--color-line)",
 };
 const HEADLINE: Record<Light, string> = {
   green: "Goed bezig — uw domein is grotendeels in orde.",
@@ -126,6 +131,18 @@ function drawRing(total: number, max: number, color: Light) {
 }
 
 function renderCategoryBar(c: SummaryCategory): string {
+  // A "niet gecontroleerd" category is neutral: no score, no filled bar — it
+  // doesn't count toward the total, so it must never read as a red 0.
+  if (c.notChecked) {
+    return `
+    <div class="bg-white rounded-xl border border-[color:var(--color-line)] p-4">
+      <div class="flex items-center justify-between gap-3">
+        <span class="font-medium">${esc(c.label)}</span>
+        <span class="tabular text-sm text-[color:var(--color-muted)]">Niet gecontroleerd</span>
+      </div>
+      <div class="mt-2 h-2.5 rounded-full overflow-hidden" style="background:${COLOR_SOFT.grey}"></div>
+    </div>`;
+  }
   const pct = c.max > 0 ? Math.round((c.score / c.max) * 100) : 0;
   return `
     <div class="bg-white rounded-xl border border-[color:var(--color-line)] p-4">
@@ -181,11 +198,16 @@ function renderReport(categories: ReportCategory[]) {
             c.caveat,
           )}</p>`
         : "";
+      // Neutral categories show their status only (no "· score/max"), so the
+      // report matches the teaser: not counted, never a red 0.
+      const meta = c.notChecked
+        ? `<span class="text-sm font-medium text-[color:var(--color-muted)]">Niet gecontroleerd</span>`
+        : `<span class="text-sm font-medium" style="color:${COLOR_VAR[c.color]}">${esc(c.status)} · ${c.score}/${c.max}</span>`;
       return `
       <div class="bg-white rounded-xl border border-[color:var(--color-line)] p-4">
         <div class="flex items-center justify-between gap-3">
           <span class="font-medium">${esc(c.label)}</span>
-          <span class="text-sm font-medium" style="color:${COLOR_VAR[c.color]}">${esc(c.status)} · ${c.score}/${c.max}</span>
+          ${meta}
         </div>
         <p class="mt-1.5 text-[color:var(--color-muted)]">${esc(c.detail)}</p>
         ${records}
@@ -258,6 +280,17 @@ async function runScan(domain: string) {
 async function unlock(checkId: string) {
   const btn = $("gate-submit") as HTMLButtonElement | null;
   setError($("gate-error"), "");
+
+  // GDPR consent is required before we create a lead (also enforced server-side).
+  const consentEl = $("consent") as HTMLInputElement | null;
+  if (!consentEl?.checked) {
+    setError(
+      $("gate-error"),
+      "Vink het vakje aan om akkoord te gaan met de verwerking van uw gegevens.",
+    );
+    return;
+  }
+
   if (btn) btn.disabled = true;
   try {
     const payload = {
@@ -266,6 +299,8 @@ async function unlock(checkId: string) {
       email: ($("email") as HTMLInputElement).value,
       bedrijf: ($("bedrijf") as HTMLInputElement).value,
       telefoon: ($("telefoon") as HTMLInputElement).value,
+      consent: true,
+      consentAt: new Date().toISOString(),
     };
     const res = await fetch(api("api/unlock"), {
       method: "POST",

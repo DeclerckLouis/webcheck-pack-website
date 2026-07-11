@@ -4,7 +4,7 @@
  * and reusable. Caching/rate-limiting live in the API layer, not here.
  */
 import { SCORING, type CategoryId, type Mode } from "../config/scoring";
-import { trafficLight } from "./scoring";
+import { trafficLight, aggregateScore } from "./scoring";
 import type { CategoryResult, FullResult } from "./types";
 import {
   checkSpf,
@@ -15,9 +15,10 @@ import {
   checkBlacklist,
   checkDomain,
   type CheckOutcome,
+  type CheckOptions,
 } from "./checks";
 
-const RUNNERS: Record<CategoryId, (d: string) => Promise<CheckOutcome>> = {
+const RUNNERS: Record<CategoryId, (d: string, opts: CheckOptions) => Promise<CheckOutcome>> = {
   spf: checkSpf,
   dmarc: checkDmarc,
   dkim: checkDkim,
@@ -37,14 +38,18 @@ function makeCheckId(): string {
  * Run a full check for an already-normalized domain. Returns the full result;
  * the API decides what to expose publicly vs. gate behind the email unlock.
  */
-export async function runCheck(domain: string, mode: Mode = "general"): Promise<FullResult> {
+export async function runCheck(
+  domain: string,
+  mode: Mode = "general",
+  opts: CheckOptions = {},
+): Promise<FullResult> {
   const profile = SCORING[mode];
   const ids = Object.keys(profile.categories) as CategoryId[];
 
   const outcomes = await Promise.all(
     ids.map(async (id) => {
       try {
-        return { id, outcome: await RUNNERS[id](domain) };
+        return { id, outcome: await RUNNERS[id](domain, opts) };
       } catch {
         // A single failing check shouldn't sink the whole report.
         const outcome: CheckOutcome = {
@@ -64,16 +69,19 @@ export async function runCheck(domain: string, mode: Mode = "general"): Promise<
       label: cfg.label,
       score: outcome.score,
       max: cfg.points,
-      color: trafficLight(outcome.score, cfg.points),
+      color: outcome.notChecked ? "grey" : trafficLight(outcome.score, cfg.points),
       status: outcome.status,
       detail: outcome.detail,
       records: outcome.records,
       caveat: outcome.caveat,
+      notChecked: outcome.notChecked,
     };
   });
 
-  const total = categories.reduce((sum, c) => sum + c.score, 0);
-  const max = categories.reduce((sum, c) => sum + c.max, 0);
+  // "Niet gecontroleerd" categories are excluded from the denominator and the
+  // remainder is rescaled to /100, so the headline score stays honest — never
+  // silently awarding or docking the excluded category's points (brief §1).
+  const { total, max } = aggregateScore(categories);
 
   return {
     domain,
@@ -102,6 +110,7 @@ export function toPublicSummary(full: FullResult) {
       score: c.score,
       max: c.max,
       color: c.color,
+      notChecked: c.notChecked,
     })),
     checkId: full.checkId,
     cached: full.cached,

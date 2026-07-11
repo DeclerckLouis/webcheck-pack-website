@@ -14,7 +14,7 @@ import {
   parseDmarc,
   classifyMx,
   reverseIpv4,
-  classifyRblAnswer,
+  classifyRblResponse,
 } from "./parse";
 import {
   DKIM_SELECTORS,
@@ -30,6 +30,14 @@ export interface CheckOutcome {
   detail: string;
   records?: string[];
   caveat?: string;
+  /** Set when the category couldn't be checked → neutral/grey, excluded from scoring. */
+  notChecked?: boolean;
+}
+
+/** Per-run options threaded from the API (env-derived secrets etc.). */
+export interface CheckOptions {
+  /** Spamhaus Data Query Service key — lets RBL lookups work through DoH (brief §1). */
+  dqsKey?: string;
 }
 
 const points = (id: CategoryId) => SCORING.general.categories[id].points;
@@ -231,8 +239,23 @@ export async function checkMx(domain: string): Promise<CheckOutcome> {
 }
 
 // --- Blacklist status ------------------------------------------------------
-export async function checkBlacklist(domain: string): Promise<CheckOutcome> {
+/**
+ * Build the query name for an RBL. In DQS mode (a Spamhaus key is configured and
+ * the zone has a `dqsZone`) the key is injected — `<name>.<key>.<dqsZone>` —
+ * which is answered through any resolver, DoH included. Otherwise we hit the
+ * public zone, which Spamhaus refuses via public resolvers (handled downstream).
+ */
+function rblQueryName(name: string, rbl: (typeof RBLS)[number], dqsKey?: string): string {
+  if (dqsKey && rbl.dqsZone) return `${name}.${dqsKey}.${rbl.dqsZone}`;
+  return `${name}.${rbl.zone}`;
+}
+
+export async function checkBlacklist(
+  domain: string,
+  opts: CheckOptions = {},
+): Promise<CheckOutcome> {
   const max = points("blacklist");
+  const dqsKey = opts.dqsKey;
 
   // Email blacklists judge the *sending mail server's* IP, so IP-based RBLs must
   // be run against the IPs behind the domain's MX records — NOT the domain's own
@@ -243,46 +266,41 @@ export async function checkBlacklist(domain: string): Promise<CheckOutcome> {
   const mailIps = await resolveMailIps(domain);
 
   const listings: string[] = [];
-  let couldCheck = false; // got at least one definitive listed/not-listed answer
-  let refusedAny = false; // at least one RBL refused (e.g. Spamhaus via public DoH)
+  let anyClean = false; // at least one definitive not-listed (NXDOMAIN) answer
+  let anyBlocked = false; // at least one list couldn't be checked (refusal/timeout)
 
   for (const rbl of RBLS) {
     // IP RBLs fan out over every mail-server IP; domain RBLs hit the domain once.
-    const queries: string[] = [];
+    const names: string[] = [];
     if (rbl.kind === "ip") {
       for (const ip of mailIps) {
         const rev = reverseIpv4(ip);
-        if (rev) queries.push(`${rev}.${rbl.zone}`);
+        if (rev) names.push(rev);
       }
     } else {
-      queries.push(`${domain}.${rbl.zone}`);
+      names.push(domain);
     }
 
-    for (const query of queries) {
-      const res = await dohQuery(query, "A");
-      // Read the RBL return code, not just "an answer exists": the 127.255.255.x
-      // range is a status/refusal code (Spamhaus returns it for queries via public
-      // resolvers), NOT a real listing. See classifyRblAnswer.
-      switch (classifyRblAnswer(res.answers.map((ans) => ans.data))) {
+    for (const name of names) {
+      const res = await dohQuery(rblQueryName(name, rbl, dqsKey), "A");
+      // Read the full response, not just "an answer exists": NXDOMAIN is the
+      // healthy not-listed case, 127.0.0.x is a genuine listing, and the
+      // 127.255.255.x range (or SERVFAIL/timeout) means we couldn't check.
+      switch (classifyRblResponse(res.status, res.answers.map((ans) => ans.data))) {
         case "listed":
           if (!listings.includes(rbl.label)) listings.push(rbl.label);
-          couldCheck = true;
-          break;
-        case "refused":
-          refusedAny = true;
           break;
         case "clean":
-          if (res.status === 0 || res.status === 3) couldCheck = true;
+          anyClean = true;
+          break;
+        case "blocked":
+          anyBlocked = true;
           break;
       }
     }
   }
 
-  // When a high-signal RBL refused the query, say so rather than implying a
-  // confidently-clean result (matches the README's documented limitation).
-  const refusalCaveat =
-    "Sommige blacklists (o.a. Spamhaus) beantwoorden geen opvragingen via publieke DNS-resolvers, dus deze uitslag is indicatief.";
-
+  // A genuine listing always wins — this is the only red outcome.
   if (listings.length > 0) {
     return {
       score: 0,
@@ -291,19 +309,26 @@ export async function checkBlacklist(domain: string): Promise<CheckOutcome> {
       records: listings,
     };
   }
-  if (!couldCheck) {
+
+  // If any list couldn't be checked (or nothing definitive came back), we don't
+  // pretend the domain is clean and we don't invent points: mark the category
+  // "niet gecontroleerd" (neutral) so it's excluded from the score (brief §1).
+  if (anyBlocked || !anyClean) {
     return {
-      score: max,
-      status: "niet te bepalen",
-      detail: "De blacklists konden niet betrouwbaar bevraagd worden.",
-      caveat: refusalCaveat,
+      score: 0,
+      notChecked: true,
+      status: "niet gecontroleerd",
+      detail: dqsKey
+        ? "We konden de blacklists nu niet betrouwbaar bevragen (geen antwoord binnen de tijd). Deze categorie telt daarom niet mee in uw score."
+        : "Spamhaus beantwoordt geen opvragingen via publieke DNS-resolvers, dus we konden de blacklists niet betrouwbaar controleren. Deze categorie telt niet mee in uw score.",
     };
   }
+
+  // Every queried list answered and none listed the domain.
   return {
     score: max,
     status: "schoon",
     detail: "Niet aangetroffen op de gecontroleerde blacklists.",
-    caveat: refusedAny ? refusalCaveat : undefined,
   };
 }
 

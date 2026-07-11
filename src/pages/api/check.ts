@@ -65,7 +65,9 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   }
 
   try {
-    const result = await runCheck(domain, mode);
+    // Spamhaus DQS key (optional): when set, RBL lookups work through DoH;
+    // when absent, the blacklist category degrades to "niet gecontroleerd".
+    const result = await runCheck(domain, mode, { dqsKey: env?.SPAMHAUS_DQS_KEY });
     // Cache full result + index by checkId so the unlock needs no re-run (§7).
     await putResult(env?.CACHE, result);
     return json(toPublicSummary(result));

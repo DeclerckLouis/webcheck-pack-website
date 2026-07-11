@@ -5,6 +5,7 @@ import {
   classifyMx,
   reverseIpv4,
   classifyRblAnswer,
+  classifyRblResponse,
 } from "../src/lib/parse";
 
 describe("countSpfLookups (port of count_spf_lookups)", () => {
@@ -88,5 +89,32 @@ describe("classifyRblAnswer (RBL return-code reading)", () => {
 
   it("prefers a real listing even when a refusal code is also present", () => {
     expect(classifyRblAnswer(["127.255.255.254", "127.0.0.2"])).toBe("listed");
+  });
+});
+
+describe("classifyRblResponse (the three response classes — brief §1)", () => {
+  it("reads NXDOMAIN as clean (the healthy not-listed case → full points)", () => {
+    expect(classifyRblResponse(3, [])).toBe("clean");
+  });
+
+  it("reads 127.0.0.2–127.0.0.11 as a genuine listing (→ 0/15, red)", () => {
+    for (let last = 2; last <= 11; last++) {
+      expect(classifyRblResponse(0, [`127.0.0.${last}`])).toBe("listed");
+    }
+    expect(classifyRblResponse(0, ["127.0.1.4"])).toBe("listed");
+  });
+
+  it("reads the 127.255.255.x range as blocked (→ niet gecontroleerd)", () => {
+    expect(classifyRblResponse(0, ["127.255.255.254"])).toBe("blocked");
+    expect(classifyRblResponse(0, ["127.255.255.252"])).toBe("blocked");
+  });
+
+  it("treats SERVFAIL / timeout / network errors as blocked", () => {
+    expect(classifyRblResponse(2, [])).toBe("blocked"); // SERVFAIL
+    expect(classifyRblResponse(-1, [])).toBe("blocked"); // network/parse failure
+  });
+
+  it("treats NOERROR with no answer (NODATA) as clean", () => {
+    expect(classifyRblResponse(0, [])).toBe("clean");
   });
 });

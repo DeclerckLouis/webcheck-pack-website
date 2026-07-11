@@ -1,10 +1,10 @@
 # Domeinscan — `scan.packetflow.be`
 
-A public, lead-generating **domain health checker** for PacketFlow. A visitor
+A public, lead-generating **domain health checker** for Packetflow. A visitor
 types a domain and gets a **0–100 score** with a red/orange/green traffic light
 across seven DNS/email/security categories. The score + traffic light are a free
 teaser; the full report (what's wrong + what it means) is unlocked with an email
-capture that feeds PacketFlow's existing Odoo CRM.
+capture that feeds Packetflow's existing Odoo CRM.
 
 Think "mxtoolbox for someone who isn't a sysadmin" — the target user is a small
 business owner (dentist, pharmacist, electrician…), and it doubles as a live
@@ -17,7 +17,7 @@ business owner (dentist, pharmacist, electrician…), and it doubles as a live
 ## Stack
 
 - **Astro 5** (static pages) + **Tailwind v4** — consistent with the main
-  PacketFlow site.
+  Packetflow site.
 - **Cloudflare Pages + Pages Functions** via `@astrojs/cloudflare`. The two
   `/api/*` routes run at the edge; everything else is prerendered static.
 - **Cloudflare KV** for the result cache and the per-IP rate limiter.

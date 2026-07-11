@@ -122,12 +122,25 @@ export const DKIM_SELECTORS = [
 /**
  * Blacklists — short, high-signal list (brief §3), NOT an exhaustive 100+ list.
  * `kind: "ip"` reverses the A-record IP; `kind: "domain"` appends the domain.
- * NOTE: Spamhaus zones frequently refuse queries that arrive via large public
- * resolvers (incl. Cloudflare DoH). Treated as best-effort; see README.
+ *
+ * Spamhaus refuses queries that arrive via large public resolvers (incl.
+ * Cloudflare DoH), answering with a 127.255.255.x error code rather than real
+ * data. Their Data Query Service (DQS) fixes this: with a per-account key the
+ * query name becomes `<name>.<key>.<dqsZone>`, which works through any resolver.
+ * When a `dqsZone` entry has no key configured we fall back to marking the whole
+ * category "niet gecontroleerd" rather than trusting a possibly-blocked answer.
  */
-export const RBLS: { zone: string; label: string; kind: "ip" | "domain" }[] = [
-  { zone: "zen.spamhaus.org", label: "Spamhaus ZEN", kind: "ip" },
-  { zone: "dbl.spamhaus.org", label: "Spamhaus DBL", kind: "domain" },
+export interface Rbl {
+  zone: string;
+  label: string;
+  kind: "ip" | "domain";
+  /** DQS zone used when SPAMHAUS_DQS_KEY is set: `<name>.<key>.<dqsZone>`. */
+  dqsZone?: string;
+}
+
+export const RBLS: Rbl[] = [
+  { zone: "zen.spamhaus.org", label: "Spamhaus ZEN", kind: "ip", dqsZone: "zen.dq.spamhaus.net" },
+  { zone: "dbl.spamhaus.org", label: "Spamhaus DBL", kind: "domain", dqsZone: "dbl.dq.spamhaus.net" },
   { zone: "b.barracudacentral.org", label: "Barracuda", kind: "ip" },
 ];
 
