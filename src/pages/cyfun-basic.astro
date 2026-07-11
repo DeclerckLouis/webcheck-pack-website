@@ -1,0 +1,713 @@
+---
+import Base from "../layouts/Base.astro";
+
+// Turnstile is optional: the widget only renders when a public sitekey is set at
+// BUILD time (this page is prerendered). The scan + lead endpoints verify the
+// token when TURNSTILE_SECRET is also configured; without both, no bot check.
+const turnstileSitekey = import.meta.env.PUBLIC_TURNSTILE_SITEKEY;
+
+const title = "CyFun Basic zelfevaluatie — is uw organisatie cyberweerbaar? | Packetflow";
+const description =
+  "Gratis, indicatieve zelfevaluatie tegen de 34 CyberFundamentals Basic-maatregelen van het CCB, met een objectieve domeinscan. Meteen een score, per functie en met werkpunten.";
+---
+
+<Base title={title} description={description}>
+  <div class="cyfun">
+    <div class="packet" id="packet" aria-hidden="true">
+      <i data-s="domein"></i><i data-s="scope"></i><i data-s="scan"></i><i data-s="vragen"></i
+      ><i data-s="resultaat"></i>
+    </div>
+
+    <main id="app" aria-live="polite"></main>
+
+    {
+      turnstileSitekey && (
+        <div class="ts-row">
+          <div
+            class="cf-turnstile"
+            data-sitekey={turnstileSitekey}
+            data-appearance="interaction-only"
+          />
+        </div>
+      )
+    }
+
+    <noscript>
+      <div class="card">
+        <h1>JavaScript vereist</h1>
+        <p class="lede">
+          Deze zelfevaluatie werkt volledig in uw browser. Schakel JavaScript in om de check te
+          starten, of neem gerust contact op — we doorlopen ze graag samen.
+        </p>
+      </div>
+    </noscript>
+  </div>
+
+  {
+    turnstileSitekey && (
+      <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
+    )
+  }
+  <script src="../scripts/cyfun.ts"></script>
+</Base>
+
+<!--
+  Styles are global (not Astro-scoped): the wizard DOM is built at runtime by the
+  island, and Astro's scoped attributes only tag build-time markup. We scope by
+  hand under `.cyfun` and map the prototype's local variables onto the real
+  PacketFlow design tokens from global.css — swap once here, the whole UI follows.
+-->
+<style is:global>
+  .cyfun {
+    /* prototype var → PacketFlow token */
+    --ink: var(--color-ink);
+    --ink-soft: var(--color-muted);
+    --ink-faint: var(--grey-500);
+    --surface: var(--color-cream);
+    --card: var(--surface-raised); /* white */
+    --line: var(--color-line);
+    --line-strong: var(--grey-300);
+    --brand: var(--color-brand); /* Packetflow blue */
+    --brand-ink: var(--blue-800);
+    --brand-wash: var(--blue-50);
+    --primary: var(--orange-600); /* Packetflow orange — CTA convention */
+    --primary-hover: var(--orange-500);
+    --ok: var(--color-score-green);
+    --ok-wash: var(--color-score-green-soft);
+    --warn: var(--color-score-orange);
+    --warn-wash: var(--color-score-orange-soft);
+    --bad: var(--color-score-red);
+    --bad-wash: var(--color-score-red-soft);
+    --radius: var(--radius-lg);
+    --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 24px 20px 80px;
+    color: var(--ink);
+    line-height: 1.55;
+  }
+  .cyfun a {
+    color: var(--brand-ink);
+  }
+
+  /* progress packet (signature) */
+  .cyfun .packet {
+    display: flex;
+    gap: 4px;
+    margin: 0 0 22px;
+  }
+  .cyfun .packet i {
+    flex: 1;
+    height: 5px;
+    border-radius: 2px;
+    background: var(--line);
+    transition: background 0.35s ease;
+  }
+  .cyfun .packet i.done {
+    background: var(--brand);
+  }
+  .cyfun .packet i.now {
+    background: var(--brand);
+    opacity: 0.45;
+  }
+
+  /* cards / typography */
+  .cyfun .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 26px 24px;
+    box-shadow: var(--shadow-sm);
+  }
+  .cyfun h1 {
+    font-size: 1.5rem;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    margin: 0 0 8px;
+    font-weight: var(--fw-semibold);
+  }
+  .cyfun h2 {
+    font-size: 1.15rem;
+    letter-spacing: -0.01em;
+    margin: 0 0 6px;
+    font-weight: var(--fw-semibold);
+  }
+  .cyfun .lede {
+    color: var(--ink-soft);
+    margin: 0 0 20px;
+    font-size: 1rem;
+  }
+  .cyfun .eyebrow {
+    font: 600 12px/1 var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--brand-ink);
+    margin: 0 0 14px;
+  }
+  .cyfun .muted {
+    color: var(--ink-faint);
+    font-size: 13px;
+  }
+  .cyfun .disclaimer {
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    border-top: 1px solid var(--line);
+    margin-top: 22px;
+    padding-top: 14px;
+  }
+
+  /* form controls */
+  .cyfun label.field {
+    display: block;
+    font-weight: 600;
+    font-size: 14px;
+    margin: 0 0 6px;
+  }
+  .cyfun label.field.checkline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .cyfun label.field.checkline input {
+    width: auto;
+  }
+  .cyfun input[type="text"],
+  .cyfun input[type="email"],
+  .cyfun select {
+    width: 100%;
+    font-size: 16px;
+    font-family: inherit;
+    color: var(--ink);
+    padding: 12px 14px;
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    background: #fff;
+  }
+  .cyfun input:focus,
+  .cyfun select:focus,
+  .cyfun button:focus-visible,
+  .cyfun .opt:focus-within {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+  .cyfun .row {
+    margin-bottom: 16px;
+  }
+  .cyfun .hint {
+    font-size: 13px;
+    color: var(--ink-faint);
+    margin: 6px 0 0;
+  }
+
+  .cyfun .btn {
+    appearance: none;
+    border: 0;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 600;
+    background: var(--primary);
+    color: #fff;
+    padding: 12px 22px;
+    border-radius: 10px;
+    transition: filter 0.15s;
+  }
+  .cyfun .btn:hover {
+    filter: brightness(1.06);
+  }
+  .cyfun .btn.secondary {
+    background: transparent;
+    color: var(--brand-ink);
+    border: 1px solid var(--line-strong);
+  }
+  .cyfun .btn.ghost {
+    background: transparent;
+    color: var(--ink-soft);
+    border: 1px solid transparent;
+    padding: 10px 8px;
+  }
+  .cyfun .btn[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+    filter: none;
+  }
+  .cyfun .actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 22px;
+    flex-wrap: wrap;
+  }
+
+  /* scope verdict */
+  .cyfun .verdict {
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin: 18px 0 0;
+    border: 1px solid;
+  }
+  .cyfun .verdict.go {
+    background: var(--ok-wash);
+    border-color: #bfe4cf;
+  }
+  .cyfun .verdict.stop {
+    background: var(--warn-wash);
+    border-color: #ecd7a6;
+  }
+  .cyfun .verdict h2 {
+    margin-bottom: 4px;
+  }
+  .cyfun .verdict p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+
+  /* scan panel */
+  .cyfun .scanrow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .cyfun .scanrow:last-child {
+    border-bottom: 0;
+  }
+  .cyfun .scanrow .name {
+    font-weight: 600;
+    font-size: 14px;
+    flex: 1;
+  }
+  .cyfun .scanrow .name code {
+    font: 12px var(--mono);
+    color: var(--ink-faint);
+    display: block;
+    font-weight: 400;
+  }
+  .cyfun .scanloading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .cyfun .spin {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid var(--line-strong);
+    border-top-color: var(--brand);
+    animation: cyfun-spin 0.7s linear infinite;
+    flex: none;
+  }
+  @keyframes cyfun-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .cyfun .pill {
+    font: 600 12px/1 inherit;
+    padding: 5px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .cyfun .pill.ok {
+    background: var(--ok-wash);
+    color: var(--ok);
+  }
+  .cyfun .pill.bad {
+    background: var(--bad-wash);
+    color: var(--bad);
+  }
+  .cyfun .pill.warn {
+    background: var(--warn-wash);
+    color: var(--warn);
+  }
+  .cyfun .pill.na {
+    background: var(--cream-deep);
+    color: var(--ink-faint);
+  }
+
+  /* in-page function nav (desktop sticky) */
+  .cyfun .fn-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 6px 0 8px;
+  }
+  .cyfun .fn-chip {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--brand-ink);
+    background: var(--brand-wash);
+    border-radius: 999px;
+    padding: 5px 10px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .cyfun .fn-chip:hover {
+    filter: brightness(0.97);
+  }
+  @media (min-width: 721px) {
+    .cyfun .fn-nav {
+      position: sticky;
+      top: 66px;
+      z-index: 5;
+      background: var(--card);
+      padding: 8px 0;
+    }
+  }
+
+  /* questionnaire */
+  .cyfun .fn-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin: 30px 0 4px;
+    scroll-margin-top: 84px;
+  }
+  .cyfun .fn-head .code {
+    font: 700 12px/1 var(--mono);
+    color: #fff;
+    background: var(--ink);
+    padding: 5px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.04em;
+  }
+  .cyfun .fn-head h2 {
+    margin: 0;
+  }
+  .cyfun .fn-sub {
+    color: var(--ink-faint);
+    font-size: 13px;
+    margin: 2px 0 10px;
+  }
+  .cyfun .q {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .cyfun .q .qtext {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 4px;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .cyfun .q .qtext .key {
+    font: 600 10px/1.4 var(--mono);
+    color: var(--brand-ink);
+    background: var(--brand-wash);
+    padding: 2px 6px;
+    border-radius: 5px;
+    white-space: nowrap;
+    margin-top: 1px;
+  }
+  .cyfun .q .qcode {
+    font: 11px var(--mono);
+    color: var(--ink-faint);
+    margin: 0;
+  }
+  .cyfun .q .qhelp {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin: 4px 0 12px;
+  }
+  .cyfun .opts {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  @media (max-width: 520px) {
+    .cyfun .opts {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  .cyfun .opt {
+    position: relative;
+  }
+  .cyfun .opt input {
+    position: absolute;
+    opacity: 0;
+    inset: 0;
+    cursor: pointer;
+  }
+  .cyfun .opt span {
+    display: block;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 6px;
+    border: 1px solid var(--line-strong);
+    border-radius: 9px;
+    color: var(--ink-soft);
+    background: #fff;
+    cursor: pointer;
+    transition: 0.12s;
+  }
+  .cyfun .opt input:checked + span {
+    color: #fff;
+    border-color: transparent;
+  }
+  .cyfun .opt[data-v="ja"] input:checked + span {
+    background: var(--ok);
+  }
+  .cyfun .opt[data-v="deels"] input:checked + span {
+    background: var(--warn);
+  }
+  .cyfun .opt[data-v="nee"] input:checked + span {
+    background: var(--bad);
+  }
+  .cyfun .opt[data-v="nvt"] input:checked + span {
+    background: var(--ink-faint);
+  }
+  .cyfun .autofill {
+    font-size: 12px;
+    color: var(--brand-ink);
+    background: var(--brand-wash);
+    border-radius: 6px;
+    padding: 6px 9px;
+    margin: 0 0 10px;
+    display: inline-block;
+  }
+
+  .cyfun .sticky {
+    position: sticky;
+    bottom: 0;
+    background: linear-gradient(transparent, var(--surface) 32%);
+    padding: 18px 0 4px;
+    margin-top: 8px;
+  }
+  .cyfun .sticky .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 16px;
+    box-shadow: var(--shadow-md);
+  }
+  .cyfun .sticky .cnt {
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  .cyfun .sticky .cnt b {
+    color: var(--ink);
+  }
+
+  /* results */
+  .cyfun .score-hero {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    flex-wrap: wrap;
+  }
+  .cyfun .ring {
+    --p: 0;
+    width: 118px;
+    height: 118px;
+    border-radius: 50%;
+    flex: none;
+    background: conic-gradient(var(--rc, var(--brand)) calc(var(--p) * 1%), var(--line) 0);
+    display: grid;
+    place-items: center;
+    position: relative;
+  }
+  .cyfun .ring::after {
+    content: "";
+    position: absolute;
+    inset: 11px;
+    background: var(--card);
+    border-radius: 50%;
+  }
+  .cyfun .ring b {
+    position: relative;
+    z-index: 1; /* sit above the ::after donut-hole so the number shows */
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .cyfun .ring b small {
+    font-size: 14px;
+    color: var(--ink-faint);
+    font-weight: 600;
+  }
+  .cyfun .score-hero .txt {
+    flex: 1;
+    min-width: 220px;
+  }
+  .cyfun .keymeas {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 12px;
+    border-radius: 9px;
+    margin-top: 10px;
+  }
+  .cyfun .keymeas.ok {
+    background: var(--ok-wash);
+    color: var(--ok);
+  }
+  .cyfun .keymeas.bad {
+    background: var(--bad-wash);
+    color: var(--bad);
+  }
+
+  .cyfun .fnbar {
+    margin: 14px 0;
+  }
+  .cyfun .fnbar .top {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 5px;
+  }
+  .cyfun .fnbar .top code {
+    font: 11px var(--mono);
+    color: var(--ink-faint);
+    font-weight: 400;
+  }
+  .cyfun .track {
+    height: 9px;
+    background: var(--line);
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  .cyfun .track i {
+    display: block;
+    height: 100%;
+    border-radius: 5px;
+  }
+
+  .cyfun .gap {
+    display: flex;
+    gap: 12px;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .cyfun .gap:last-child {
+    border-bottom: 0;
+  }
+  .cyfun .gap .mark {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: 7px;
+    flex: none;
+  }
+  .cyfun .gap .mark.nee {
+    background: var(--bad);
+  }
+  .cyfun .gap .mark.deels {
+    background: var(--warn);
+  }
+  .cyfun .gap .g-t {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+  }
+  .cyfun .gap .g-t .key {
+    font: 600 10px/1.4 var(--mono);
+    color: var(--brand-ink);
+    background: var(--brand-wash);
+    padding: 1px 5px;
+    border-radius: 5px;
+    margin-left: 6px;
+  }
+  .cyfun .gap .g-c {
+    font: 11px var(--mono);
+    color: var(--ink-faint);
+    margin: 0;
+  }
+  .cyfun .gap .g-h {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin: 3px 0 0;
+  }
+
+  /* lead gate (dark card) */
+  .cyfun .gate {
+    margin-top: 24px;
+    background: var(--ink);
+    color: #fff;
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+  .cyfun .gate h2 {
+    color: #fff;
+  }
+  .cyfun .gate p {
+    color: #d8d2c8;
+    font-size: 14px;
+    margin: 0 0 16px;
+  }
+  .cyfun .gate input[type="email"] {
+    background: #2a2620;
+    border-color: #4a453d;
+    color: #fff;
+  }
+  .cyfun .gate input::placeholder {
+    color: #a8a097;
+  }
+  .cyfun .gate .consent {
+    display: flex;
+    gap: 9px;
+    align-items: flex-start;
+    font-size: 12.5px;
+    color: #c9c2b6;
+    margin: 12px 0 0;
+    cursor: pointer;
+  }
+  .cyfun .gate .consent input {
+    width: auto;
+    margin-top: 2px;
+    flex: none;
+  }
+  .cyfun .gate .consent a {
+    color: var(--orange-300);
+  }
+  .cyfun .gate-msg {
+    font-size: 13px;
+    color: #c9c2b6;
+    margin-top: 10px;
+    min-height: 18px;
+  }
+
+  .cyfun .ts-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 18px;
+  }
+
+  .cyfun .hidden {
+    display: none;
+  }
+  .cyfun .fade {
+    animation: cyfun-fade 0.3s ease;
+  }
+  @keyframes cyfun-fade {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cyfun .fade {
+      animation: none;
+    }
+    .cyfun .packet i {
+      transition: none;
+    }
+    .cyfun .spin {
+      animation-duration: 1.4s;
+    }
+  }
+</style>

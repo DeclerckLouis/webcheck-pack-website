@@ -34,36 +34,19 @@ export interface LeadInput {
   partnerSlug?: string;
 }
 
-export async function forwardLead(
-  odooBaseUrl: string | undefined,
-  lead: LeadInput,
+/**
+ * Low-level POST to Odoo's website_form `crm.lead` endpoint, shared by every
+ * lead forwarder here. Reads the real response (we run server-side, so no
+ * `no-cors` blindness) and only reports success on a numeric record id.
+ */
+async function postCrmLead(
+  base: string,
+  fields: Record<string, string | undefined>,
 ): Promise<{ ok: boolean; id?: number; error?: string }> {
-  const base = (odooBaseUrl || DEFAULT_ODOO_URL).replace(/\/$/, "");
-
-  const context = [
-    "— Domeinscan —",
-    `Domein: ${lead.domain}`,
-    `Score: ${lead.score}/${lead.max}`,
-    `Uitgevoerd: ${lead.generatedAt}`,
-    // GDPR: record that consent was given and when, so the lawful basis for
-    // contacting this lead is auditable from the CRM record itself (brief §3).
-    `Toestemming: ${lead.consent ? "ja" : "nee"} (${lead.consentAt})`,
-    // Partner attribution (brief part A): duplicated in the description so it's
-    // human-readable in the CRM even if `referred` isn't natively mapped.
-    ...(lead.partnerSlug ? [`Partner: ${lead.partnerSlug}`] : []),
-  ].join("\n");
-  const description = `Aanvraag volledig rapport.\n\n${context}`;
-
   const form = new FormData();
-  form.append("contact_name", lead.naam);
-  form.append("email_from", lead.email);
-  if (lead.telefoon) form.append("phone", lead.telefoon);
-  if (lead.bedrijf) form.append("partner_name", lead.bedrijf);
-  form.append("description", description);
-  form.append("name", `Domeinscan-aanvraag — ${lead.naam} (${lead.domain})`);
-  // Attribution field: crm.lead's native "Referred By" (`referred`, char). When
-  // absent the lead keeps the existing default source (no referred set).
-  if (lead.partnerSlug) form.append("referred", lead.partnerSlug);
+  for (const [k, v] of Object.entries(fields)) {
+    if (v !== undefined && v !== "") form.append(k, v);
+  }
 
   try {
     const res = await fetch(`${base}/website/form/crm.lead`, {
@@ -91,4 +74,92 @@ export async function forwardLead(
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "onbekend" };
   }
+}
+
+export async function forwardLead(
+  odooBaseUrl: string | undefined,
+  lead: LeadInput,
+): Promise<{ ok: boolean; id?: number; error?: string }> {
+  const base = (odooBaseUrl || DEFAULT_ODOO_URL).replace(/\/$/, "");
+
+  const context = [
+    "— Domeinscan —",
+    `Domein: ${lead.domain}`,
+    `Score: ${lead.score}/${lead.max}`,
+    `Uitgevoerd: ${lead.generatedAt}`,
+    // GDPR: record that consent was given and when, so the lawful basis for
+    // contacting this lead is auditable from the CRM record itself (brief §3).
+    `Toestemming: ${lead.consent ? "ja" : "nee"} (${lead.consentAt})`,
+    // Partner attribution (brief part A): duplicated in the description so it's
+    // human-readable in the CRM even if `referred` isn't natively mapped.
+    ...(lead.partnerSlug ? [`Partner: ${lead.partnerSlug}`] : []),
+  ].join("\n");
+
+  return postCrmLead(base, {
+    contact_name: lead.naam,
+    email_from: lead.email,
+    phone: lead.telefoon,
+    partner_name: lead.bedrijf,
+    description: `Aanvraag volledig rapport.\n\n${context}`,
+    name: `Domeinscan-aanvraag — ${lead.naam} (${lead.domain})`,
+    // Attribution field: crm.lead's native "Referred By" (`referred`, char). When
+    // absent the lead keeps the existing default source (no referred set).
+    referred: lead.partnerSlug,
+  });
+}
+
+/** Lead from the CyFun Basic zelfevaluatie (brief integration point B). */
+export interface CyfunLeadInput {
+  email: string;
+  domain: string;
+  /** Overall CyFun Basic score, 0–100. */
+  score: number;
+  /** Key measures fully met, out of keyTotal. */
+  keyMet: number;
+  keyTotal: number;
+  /** Triage outcome level (Basic / Important / Essential). */
+  scopeLevel: string;
+  /** Control ids flagged as gaps (key measures first), for the follow-up report. */
+  gaps: string[];
+  /** GDPR consent (brief §3). Always true when a lead is created. */
+  consent: boolean;
+  consentAt: string;
+  /** Referring partner slug (`?via=`), already validated. Attribution only. */
+  partnerSlug?: string;
+}
+
+/**
+ * Forward a CyFun Basic self-assessment lead to the SAME Odoo `crm.lead`
+ * pipeline as the domain scan. The prototype only captures an e-mail at the
+ * gate, so the e-mail doubles as the contact handle; the assessment context
+ * (score, key measures, scope, gap ids) goes into the description.
+ */
+export async function forwardCyfunLead(
+  odooBaseUrl: string | undefined,
+  lead: CyfunLeadInput,
+): Promise<{ ok: boolean; id?: number; error?: string }> {
+  const base = (odooBaseUrl || DEFAULT_ODOO_URL).replace(/\/$/, "");
+  const basisReady = lead.keyMet === lead.keyTotal;
+
+  const context = [
+    "— CyFun Basic zelfevaluatie —",
+    `Domein: ${lead.domain}`,
+    `Score: ${lead.score}/100`,
+    `Sleutelmaatregelen: ${lead.keyMet}/${lead.keyTotal} volledig in orde`,
+    `Basic-klaar: ${basisReady ? "ja" : "nog niet"}`,
+    `Toepassingsgebied: ${lead.scopeLevel}`,
+    // GDPR: auditable lawful basis, same posture as the domain-scan lead (§3).
+    `Toestemming: ${lead.consent ? "ja" : "nee"} (${lead.consentAt})`,
+    lead.gaps.length ? `Werkpunten (${lead.gaps.length}): ${lead.gaps.join(", ")}` : "Geen openstaande werkpunten.",
+    ...(lead.partnerSlug ? [`Partner: ${lead.partnerSlug}`] : []),
+  ].join("\n");
+
+  return postCrmLead(base, {
+    contact_name: lead.email,
+    email_from: lead.email,
+    partner_name: lead.domain,
+    description: `Aanvraag volledig CyFun Basic-rapport + stappenplan.\n\n${context}`,
+    name: `CyFun Basic-aanvraag — ${lead.domain}`,
+    referred: lead.partnerSlug,
+  });
 }
