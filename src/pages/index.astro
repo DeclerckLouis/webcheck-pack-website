@@ -79,6 +79,8 @@ const turnstileSitekey = import.meta.env.PUBLIC_TURNSTILE_SITEKEY;
           </div>
         )
       }
+      <!-- Co-branding line: revealed by app.ts only for a valid, active ?via= partner. -->
+      <p id="partner-note" class="hidden mt-3 text-sm text-[color:var(--color-muted)]"></p>
       <p id="form-error" class="mt-2 text-sm text-[color:var(--color-score-red)] min-h-5" role="alert"></p>
     </form>
 

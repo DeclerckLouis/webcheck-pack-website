@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { getResultByCheckId, checkRateLimit } from "../../lib/server/kv";
 import { forwardLead } from "../../lib/server/odoo";
 import { verifyTurnstile } from "../../lib/server/turnstile";
+import { findPartner } from "../../data/partners";
 
 export const prerender = false;
 
@@ -32,6 +33,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     turnstileToken?: string;
     consent?: boolean;
     consentAt?: string;
+    via?: string;
   };
   try {
     payload = await request.json();
@@ -86,6 +88,11 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     );
   }
 
+  // Partner attribution (brief part A): re-validate the client-supplied slug
+  // against the registry server-side, so an unknown/inactive/spoofed value is
+  // silently ignored and the lead keeps the default source.
+  const partner = findPartner(payload.via);
+
   // Best-effort lead forward to Odoo. We DON'T block the report on a CRM hiccup —
   // the visitor already earned the report; a failed lead is logged, not fatal.
   const lead = await forwardLead(env?.PUBLIC_ODOO_URL, {
@@ -99,6 +106,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     generatedAt: full.generatedAt,
     consent: true,
     consentAt,
+    partnerSlug: partner?.slug,
   });
   if (!lead.ok) {
     console.error("Odoo lead forward failed:", lead.error);
