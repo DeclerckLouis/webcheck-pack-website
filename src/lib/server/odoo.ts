@@ -26,6 +26,12 @@ export interface LeadInput {
   consent: boolean;
   /** ISO timestamp of when consent was given. */
   consentAt: string;
+  /**
+   * Referring partner slug from `?via=` (brief part A), already validated against
+   * the registry. Attribution only — nothing about the visitor is shared with the
+   * partner. Absent for direct visits, which keep the existing default source.
+   */
+  partnerSlug?: string;
 }
 
 export async function forwardLead(
@@ -42,6 +48,9 @@ export async function forwardLead(
     // GDPR: record that consent was given and when, so the lawful basis for
     // contacting this lead is auditable from the CRM record itself (brief §3).
     `Toestemming: ${lead.consent ? "ja" : "nee"} (${lead.consentAt})`,
+    // Partner attribution (brief part A): duplicated in the description so it's
+    // human-readable in the CRM even if `referred` isn't natively mapped.
+    ...(lead.partnerSlug ? [`Partner: ${lead.partnerSlug}`] : []),
   ].join("\n");
   const description = `Aanvraag volledig rapport.\n\n${context}`;
 
@@ -52,6 +61,9 @@ export async function forwardLead(
   if (lead.bedrijf) form.append("partner_name", lead.bedrijf);
   form.append("description", description);
   form.append("name", `Domeinscan-aanvraag — ${lead.naam} (${lead.domain})`);
+  // Attribution field: crm.lead's native "Referred By" (`referred`, char). When
+  // absent the lead keeps the existing default source (no referred set).
+  if (lead.partnerSlug) form.append("referred", lead.partnerSlug);
 
   try {
     const res = await fetch(`${base}/website/form/crm.lead`, {

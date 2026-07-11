@@ -7,6 +7,8 @@
  * full report from cache (no re-run — brief §7). Vanilla TS, no framework, so the
  * results view stays snappy on a phone at a networking breakfast (brief §7).
  */
+import { resolvePartner } from "./partner";
+
 type Light = "green" | "orange" | "red" | "grey";
 
 interface SummaryCategory {
@@ -301,6 +303,9 @@ async function unlock(checkId: string) {
       telefoon: ($("telefoon") as HTMLInputElement).value,
       consent: true,
       consentAt: new Date().toISOString(),
+      // Re-resolve so the slug survives across scans in the same session; the
+      // server re-validates against the registry, so an invalid value is a no-op.
+      via: resolvePartner()?.slug,
     };
     const res = await fetch(api("api/unlock"), {
       method: "POST",
@@ -326,6 +331,18 @@ async function unlock(checkId: string) {
     setError($("gate-error"), "Kon geen verbinding maken. Probeer het later opnieuw.");
   } finally {
     if (btn) btn.disabled = false;
+  }
+}
+
+// --- partner attribution (brief part A) -------------------------------------
+// Resolve once on load: a valid ?via= partner is persisted for the session and
+// reused at unlock time. Without a valid partner the page is unchanged.
+const sessionPartner = resolvePartner();
+if (sessionPartner) {
+  const note = $("partner-note");
+  if (note) {
+    note.textContent = `Op aanraden van ${sessionPartner.displayName}`;
+    note.classList.remove("hidden");
   }
 }
 

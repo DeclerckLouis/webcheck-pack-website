@@ -52,6 +52,8 @@ const year = new Date().getFullYear();
     <div class="container site-footer__bar-in">
       <span>{site.pillars} — © {year} {site.legalName}</span>
       <nav aria-label="Juridisch">
+        <!-- Same-origin (scan-site) page, so not wrapped in url() which points at the main site. -->
+        <a href="/cyberverzekering">Voor verzekeringsmakelaars</a>
         <a href={url("/blog")}>Blog</a>
         <a href={url("/over-mij")}>Over mij</a>
         <a href={url("/lokale-it-partner-vs-groot-it-bedrijf")}>Lokaal vs. groot</a>

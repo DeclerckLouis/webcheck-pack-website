@@ -1,0 +1,99 @@
+---
+import Base from "../layouts/Base.astro";
+import { url } from "../lib/url";
+
+// Landing page for insurance brokers and their SMB clients (brief part B).
+// Reuses the scan site's Base layout, header, footer and styling. Indexable
+// (no noindex); the CTA carries an active ?via= partner through to the scan.
+const title = "Cyberveilig genoeg voor uw verzekeraar? | Gratis domeinscan";
+const description =
+  "Cyberverzekeraars letten op digitale hygiëne. Test gratis in 30 seconden hoe uw domein en e-mail ervoor staan.";
+---
+
+<Base title={title} description={description}>
+  <article class="mx-auto max-w-3xl px-5 pt-10 sm:pt-16">
+    <header class="text-center">
+      <h1 class="text-4xl sm:text-5xl font-semibold tracking-tight leading-[1.08]">
+        Cyberveilig genoeg voor uw <span
+          class="font-serif italic text-[color:var(--color-brand)]">verzekeraar</span
+        >?
+      </h1>
+      <div class="mt-5 space-y-4 text-lg text-[color:var(--color-muted)] text-left sm:text-center">
+        <p>
+          Cyberverzekeraars kijken steeds vaker mee naar de digitale hygiëne van
+          hun klanten. Wie de basis niet op orde heeft, betaalt meer premie of
+          wordt geweigerd. Sommige verzekeraars scannen bedrijven zelfs extern
+          voor ze een polis accepteren.
+        </p>
+        <p>
+          Met deze gratis scan ziet u in dertig seconden hoe uw domein en e-mail
+          er technisch voorstaan: dezelfde zaken die een verzekeraar of aanvaller
+          van buitenaf kan zien.
+        </p>
+      </div>
+      <div class="mt-8">
+        <a
+          id="scan-cta"
+          href="/"
+          class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[color:var(--color-accent)] hover:bg-[color:var(--color-accent-deep)] text-white font-semibold transition-colors"
+        >
+          Scan uw domein →
+        </a>
+      </div>
+    </header>
+
+    <section class="mt-14">
+      <h2 class="text-2xl font-semibold tracking-tight">Wat de scan controleert</h2>
+      <div class="mt-4 space-y-4 text-[color:var(--color-muted)]">
+        <p>
+          De scan meet de technische buitenkant van uw domein: is uw e-mail
+          beschermd tegen vervalsing (SPF, DKIM, DMARC), is uw domeinnaam
+          beveiligd tegen manipulatie (DNSSEC), en staat uw domein op een zwarte
+          lijst. In gewone taal, zonder technisch jargon.
+        </p>
+        <p>
+          Eerlijk is eerlijk: dit is geen volledige cyberaudit. Interne zaken
+          zoals back-ups, updates en tweestapsverificatie ziet een externe scan
+          niet. Maar wie hier al rood scoort, heeft binnen meestal ook werk.
+        </p>
+      </div>
+    </section>
+
+    <section class="mt-12">
+      <h2 class="text-2xl font-semibold tracking-tight">Voor verzekeringsmakelaars</h2>
+      <div class="mt-4 space-y-4 text-[color:var(--color-muted)]">
+        <p>
+          Verwijst uw website nog naar een cybertest die niet meer bestaat? Wij
+          bieden makelaars een gratis alternatief: een werkende, Belgische scan
+          waar u zonder kosten of verplichtingen naar kunt doorverwijzen. Uw
+          klanten krijgen direct inzicht, u krijgt een gespreksopener over
+          cyberrisico's en preventie.
+        </p>
+        <p>
+          Interesse in een doorverwijslink op naam? Neem contact op via
+          <a
+            href={url("/contact")}
+            class="text-[color:var(--color-brand)] underline hover:no-underline"
+            >onze contactpagina</a
+          >.
+        </p>
+      </div>
+      <p class="mt-6 text-sm text-[color:var(--color-muted)]">
+        Deze scan is een dienst van Packetflow en staat los van enige verzekeraar
+        of polis.
+      </p>
+    </section>
+  </article>
+
+  <script>
+    // Carry an active ?via= partner through to the scan page (brief part B).
+    // resolvePartner validates the slug against the registry and persists it for
+    // the session, so a direct visit leaves the CTA pointing at the bare scan.
+    import { resolvePartner } from "../scripts/partner";
+    const cta = document.getElementById("scan-cta") as HTMLAnchorElement | null;
+    const partner = resolvePartner();
+    if (cta && partner) {
+      cta.href = `/?via=${encodeURIComponent(partner.slug)}`;
+    }
+  </script>
+</Base>
