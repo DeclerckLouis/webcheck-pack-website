@@ -17,22 +17,31 @@ const STORAGE_KEY = "pf_partner";
  * session. Returns null when there's nothing valid to attribute to.
  */
 export function resolvePartner(): Partner | null {
-  let fromUrl: Partner | null = null;
+  let params: URLSearchParams | null = null;
   try {
-    fromUrl = findPartner(new URLSearchParams(window.location.search).get("via"));
+    params = new URLSearchParams(window.location.search);
   } catch {
-    /* malformed query string — treat as no partner */
+    /* malformed query string — treat as no param */
   }
 
-  if (fromUrl) {
-    try {
-      sessionStorage.setItem(STORAGE_KEY, fromUrl.slug);
-    } catch {
-      /* storage unavailable (private mode) — attribution just won't persist */
+  // A `via` in the URL is authoritative. A valid one wins and is persisted; an
+  // unknown or inactive one means "no partner" for this visit and must NOT fall
+  // back to a slug stored earlier this session — otherwise ?via=anything would
+  // resurrect a previously-seen partner.
+  if (params?.has("via")) {
+    const fromUrl = findPartner(params.get("via"));
+    if (fromUrl) {
+      try {
+        sessionStorage.setItem(STORAGE_KEY, fromUrl.slug);
+      } catch {
+        /* storage unavailable (private mode) — attribution just won't persist */
+      }
     }
     return fromUrl;
   }
 
+  // No `via` param at all: reuse a partner stored earlier this session so the
+  // attribution survives navigation within the flow (e.g. the landing-page hop).
   try {
     return findPartner(sessionStorage.getItem(STORAGE_KEY));
   } catch {
