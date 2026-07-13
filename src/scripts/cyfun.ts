@@ -40,6 +40,29 @@ function resetTurnstile() {
   if (typeof turnstile !== "undefined") turnstile.reset();
 }
 
+/** True when a Turnstile widget is on the page (i.e. a sitekey was configured). */
+function turnstileConfigured(): boolean {
+  return !!document.querySelector(".cf-turnstile");
+}
+
+/**
+ * Wait for Turnstile to produce a token before we fire a protected request, so
+ * the token is actually used (matching the root scan's behaviour — brief §5: no
+ * request that's guaranteed to fail verification). A no-op when Turnstile isn't
+ * configured; bounded so a stuck widget can't hang the flow (the server still
+ * enforces the check regardless).
+ */
+async function awaitTurnstileToken(timeoutMs = 6000): Promise<string | undefined> {
+  if (!turnstileConfigured()) return undefined;
+  const start = Date.now();
+  let t = turnstileToken();
+  while (!t && Date.now() - start < timeoutMs) {
+    await new Promise((r) => setTimeout(r, 200));
+    t = turnstileToken();
+  }
+  return t;
+}
+
 // --- scan result (mapped from the Worker's category summary) -----------------
 type ScanState = "pass" | "warn" | "fail" | "unknown";
 interface ScanResult {
@@ -81,10 +104,14 @@ async function runScan(domain: string): Promise<ScanResult> {
     return "fail";
   };
   try {
+    // Give Turnstile a moment to hand us a token (when configured) so the scan
+    // is verified rather than silently degrading. On timeout we still fire: the
+    // Worker enforces the check, and a missing token just degrades gracefully.
+    const token = await awaitTurnstileToken();
     const res = await fetch(api("api/check"), {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ domain, mode: "general", turnstileToken: turnstileToken() }),
+      body: JSON.stringify({ domain, mode: "general", turnstileToken: token }),
     });
     if (!res.ok) return fail;
     const data = (await res.json()) as { categories?: SummaryCategory[] };
@@ -458,10 +485,19 @@ async function submitLead(payload: LeadPayload, msgEl: HTMLElement, btn: HTMLBut
   btn.textContent = "Versturen…";
   msgEl.textContent = "";
   try {
+    // Don't submit a lead that's guaranteed to fail verification: when Turnstile
+    // is configured, wait for its token first (same guard as the root gate).
+    const token = await awaitTurnstileToken();
+    if (turnstileConfigured() && !token) {
+      btn.disabled = false;
+      btn.textContent = original;
+      msgEl.textContent = "De beveiligingscontrole laadt nog. Probeer het over een paar seconden opnieuw.";
+      return;
+    }
     const res = await fetch(api("api/cyfun-lead"), {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ ...payload, turnstileToken: turnstileToken() }),
+      body: JSON.stringify({ ...payload, turnstileToken: token }),
     });
     const data = (await res.json()) as { error?: string; leadStored?: boolean; leadError?: string };
     if (!res.ok) {
